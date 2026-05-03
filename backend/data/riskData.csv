@@ -1,0 +1,7 @@
+stress_score,support_level,low_mood_count,negative_emotion_count,risk
+80,low,5,7,high
+70,low,4,6,high
+60,medium,3,5,medium
+50,medium,2,3,medium
+40,high,1,2,low
+30,high,0,1,low
