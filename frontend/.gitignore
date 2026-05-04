@@ -1,4 +1,6 @@
-# Logs
+# =========================
+# LOGS
+# =========================
 logs
 *.log
 npm-debug.log*
@@ -7,16 +9,101 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+dist/
+dist-ssr/
+build/
+.next/
+out/
 *.local
 
-# Editor directories and files
+# npm / yarn
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =========================
+# PYTHON BACKEND
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py,cover
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python env files
+.env
+.env.*
+*.env
+
+# =========================
+# DATABASE
+# =========================
+*.db
+*.sqlite3
+*.sqlite
+*.sql
+
+# =========================
+# ALEMBIC
+# =========================
+alembic/__pycache__/
+# ⚠️ DO NOT IGNORE:
+# alembic/versions/
+
+# =========================
+# ML MODELS
+# =========================
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.onnx
+*.bin
+
+# =========================
+# FILES / UPLOADS
+# =========================
+uploads/
+media/
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# CACHE
+# =========================
+.cache/
+tmp/
+
+# =========================
+# SECRETS
+# =========================
+secrets.json
+credentials.json
+
+# =========================
+# EDITOR / OS
+# =========================
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
