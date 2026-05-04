@@ -17,63 +17,84 @@ function RecoveryPlan() {
     }
   };
 
-  if (!data) return <p>Loading plan...</p>;
+  if (!data) return <div className="recovery-page">Loading plan...</div>;
+
+  const tasks = [
+    ["Breathing", data.breathing_exercise],
+    ["CBT Task", data.cbt_task],
+    ["Journaling", data.journaling_task],
+    ["Sleep Tip", data.sleep_tip],
+    ["Habit Goal", data.habit_goal],
+  ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Recovery Plan</h1>
-
-      <div className="space-y-2 mb-6">
-        <p>Risk: {data.risk_level}</p>
-        <p>Trend: {data.overall_trend}</p>
-        <p>Emotion: {data.dominant_emotion}</p>
+    <div className="recovery-page">
+      <div className="recovery-header">
+        <h1>Recovery Plan</h1>
+        <p>Your personalized daily wellness routine generated from mood, emotion, and risk signals.</p>
       </div>
 
-      {/* Daily Routine */}
-      <h2 className="text-xl font-semibold mb-2">Daily Routine</h2>
-      <ul className="mb-6 list-disc ml-6">
-        {data.daily_routine.map((item, i) => (
-          <li key={i}>{item}</li>
-        ))}
-      </ul>
-
-      {/* Tasks */}
-      <div className="space-y-4">
-        <div className="bg-white/10 p-4 rounded-xl">
-          <strong>Breathing:</strong> {data.breathing_exercise}
+      <div className="recovery-summary">
+        <div className={`recovery-summary-card risk-${data.risk_level.toLowerCase()}`}>
+          <span>Risk Level</span>
+          <strong>{data.risk_level}</strong>
         </div>
 
-        <div className="bg-white/10 p-4 rounded-xl">
-          <strong>CBT Task:</strong> {data.cbt_task}
+        <div className="recovery-summary-card">
+          <span>Overall Trend</span>
+          <strong>{data.overall_trend}</strong>
         </div>
 
-        <div className="bg-white/10 p-4 rounded-xl">
-          <strong>Journaling:</strong> {data.journaling_task}
-        </div>
-
-        <div className="bg-white/10 p-4 rounded-xl">
-          <strong>Sleep Tip:</strong> {data.sleep_tip}
-        </div>
-
-        <div className="bg-white/10 p-4 rounded-xl">
-          <strong>Goal:</strong> {data.habit_goal}
+        <div className="recovery-summary-card">
+          <span>Dominant Emotion</span>
+          <strong>{data.dominant_emotion}</strong>
         </div>
       </div>
 
-      {/* Suggestions */}
-      <h2 className="text-xl font-semibold mt-6 mb-2">
-        Suggested Activities
-      </h2>
+      <section className="recovery-section">
+        <h2>Daily Routine</h2>
 
-      <div className="grid gap-3">
-        {data.recommended_activities.map((rec, i) => (
-          <div key={i} className="bg-purple-600 p-3 rounded-xl">
-            {rec}
-          </div>
-        ))}
+        <div className="routine-list">
+          {data.daily_routine.map((item, i) => (
+            <div key={i} className="routine-item">
+              <div className="routine-number">{i + 1}</div>
+              <p>{item}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="recovery-section">
+        <h2>Care Tasks</h2>
+
+        <div className="care-task-grid">
+          {tasks.map(([title, value], i) => (
+            <div key={i} className="care-task-card">
+              <h3>{title}</h3>
+              <p>{value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="recovery-section">
+        <h2>Suggested Activities</h2>
+
+        <div className="activity-list">
+          {data.recommended_activities.map((rec, i) => (
+            <div key={i} className="activity-card">
+              {rec}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="therapy-card">
+        <h3>Therapy Suggestion</h3>
+        <p>{data.therapy_suggestion}</p>
       </div>
 
-      <p className="mt-6 text-green-400">{data.therapy_suggestion}</p>
+      <p className="recovery-note">{data.note}</p>
     </div>
   );
 }

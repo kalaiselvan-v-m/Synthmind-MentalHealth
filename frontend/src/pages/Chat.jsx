@@ -6,10 +6,10 @@ function Chat() {
   const [messages, setMessages] = useState([
     {
       sender: "ai",
-      text: "Hi, I’m SynthMind. You can talk to me about what’s on your mind.",
+      text: "Hi, I’m SynthMind. What’s on your mind today?",
       emotion: "neutral",
-      risk: "Low"
-    }
+      risk: "Low",
+    },
   ]);
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
@@ -22,23 +22,23 @@ function Chat() {
     if (!message.trim() || loading) return;
 
     const currentMessage = message;
+    setMessage("");
 
     setMessages((prev) => [
       ...prev,
       {
         sender: "user",
-        text: currentMessage
-      }
+        text: currentMessage,
+      },
     ]);
 
-    setMessage("");
     setLoading(true);
 
     try {
       const res = await API.post("/chat/send", {
         user_id: 1,
         message: currentMessage,
-        mode: "guidance"
+        mode: "guidance",
       });
 
       setMessages((prev) => [
@@ -47,8 +47,8 @@ function Chat() {
           sender: "ai",
           text: res.data.reply,
           emotion: res.data.emotion,
-          risk: res.data.riskLevel
-        }
+          risk: res.data.riskLevel,
+        },
       ]);
     } catch (err) {
       console.error(err);
@@ -56,8 +56,10 @@ function Chat() {
         ...prev,
         {
           sender: "ai",
-          text: "I’m having trouble connecting right now. Please try again."
-        }
+          text: "I’m having trouble connecting right now. Please try again.",
+          emotion: "neutral",
+          risk: "Low",
+        },
       ]);
     }
 
@@ -65,46 +67,50 @@ function Chat() {
   };
 
   return (
-    <div className="chat-page">
-      <div className="chat-header">
+    <div className="chatgpt-page">
+      <div className="chatgpt-topbar">
         <div>
           <h1>SynthMind AI</h1>
-          <p>Private emotional support chat</p>
+          <p>Private emotional support assistant</p>
         </div>
 
-        <div className="chat-status">
-          <span className="status-dot"></span>
+        <div className="chatgpt-online">
+          <span></span>
           Online
         </div>
       </div>
 
-      <div className="chat-shell">
-        <div className="chat-messages">
+      <div className="chatgpt-window">
+        <div className="chatgpt-messages">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`message-row ${
-                msg.sender === "user" ? "user-row" : "ai-row"
+              className={`chatgpt-message-row ${
+                msg.sender === "user" ? "chatgpt-user-row" : "chatgpt-ai-row"
               }`}
             >
               {msg.sender === "ai" && (
-                <div className="avatar ai-avatar">S</div>
+                <div className="chatgpt-avatar chatgpt-ai-avatar">S</div>
               )}
 
-              <div
-                className={`message-bubble ${
-                  msg.sender === "user" ? "user-bubble" : "ai-bubble"
-                }`}
-              >
-                <p>{msg.text}</p>
+              <div className="chatgpt-message-content">
+                <div
+                  className={`chatgpt-bubble ${
+                    msg.sender === "user"
+                      ? "chatgpt-user-bubble"
+                      : "chatgpt-ai-bubble"
+                  }`}
+                >
+                  {msg.text}
+                </div>
 
                 {msg.sender === "ai" && msg.emotion && (
-                  <div className="message-tags">
-                    <span className="tag emotion-tag">
+                  <div className="chatgpt-meta">
+                    <span className="chatgpt-pill emotion">
                       Emotion: {msg.emotion}
                     </span>
                     <span
-                      className={`tag ${
+                      className={`chatgpt-pill ${
                         msg.risk === "High"
                           ? "risk-high"
                           : msg.risk === "Medium"
@@ -119,15 +125,15 @@ function Chat() {
               </div>
 
               {msg.sender === "user" && (
-                <div className="avatar user-avatar">You</div>
+                <div className="chatgpt-avatar chatgpt-user-avatar">You</div>
               )}
             </div>
           ))}
 
           {loading && (
-            <div className="message-row ai-row">
-              <div className="avatar ai-avatar">S</div>
-              <div className="typing-bubble">
+            <div className="chatgpt-message-row chatgpt-ai-row">
+              <div className="chatgpt-avatar chatgpt-ai-avatar">S</div>
+              <div className="chatgpt-typing">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -138,23 +144,29 @@ function Chat() {
           <div ref={chatEndRef} />
         </div>
 
-        <div className="chat-input-area">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Message SynthMind..."
-            rows="1"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-          />
+        <div className="chatgpt-input-wrapper">
+          <div className="chatgpt-input-box">
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Message SynthMind..."
+              rows="1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
 
-          <button onClick={sendMessage} disabled={loading || !message.trim()}>
-            ➤
-          </button>
+            <button onClick={sendMessage} disabled={loading || !message.trim()}>
+              ↑
+            </button>
+          </div>
+
+          <p className="chatgpt-disclaimer">
+            SynthMind can support reflection, but it is not a medical diagnosis tool.
+          </p>
         </div>
       </div>
     </div>

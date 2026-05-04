@@ -11,9 +11,13 @@ const moods = [
 function Mood() {
   const [selected, setSelected] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const saveMood = async () => {
-    if (!selected) return;
+    if (!selected || loading) return;
+
+    setLoading(true);
+    setMessage("");
 
     try {
       await API.post("/mood/checkin", {
@@ -22,43 +26,52 @@ function Mood() {
         note: ""
       });
 
-      setMessage("Mood saved successfully ✅");
+      setMessage("Saved successfully ✨");
       setSelected("");
     } catch (err) {
       console.error(err);
-      setMessage("Error saving mood ❌");
+      setMessage("Something went wrong ❌");
     }
+
+    setLoading(false);
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Daily Mood Check-in</h1>
+    <div className="mood-page">
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Header */}
+      <div className="mood-header">
+        <h1>How are you feeling today?</h1>
+        <p>Take a moment to check in with yourself</p>
+      </div>
+
+      {/* Mood Cards */}
+      <div className="mood-grid">
         {moods.map((m) => (
-          <button
+          <div
             key={m.label}
-            onClick={() => setSelected(m.label)}
-            className={`p-5 rounded-xl text-center border ${
-              selected === m.label
-                ? "bg-purple-600"
-                : "bg-white/10 hover:bg-white/20"
+            className={`mood-card ${
+              selected === m.label ? "selected" : ""
             }`}
+            onClick={() => setSelected(m.label)}
           >
-            <div className="text-3xl">{m.emoji}</div>
-            <div className="mt-2">{m.label}</div>
-          </button>
+            <div className="mood-emoji">{m.emoji}</div>
+            <div className="mood-label">{m.label}</div>
+          </div>
         ))}
       </div>
 
+      {/* Save Button */}
       <button
+        className="mood-save-btn"
         onClick={saveMood}
-        className="mt-6 px-6 py-3 bg-green-600 rounded-xl hover:bg-green-700"
+        disabled={!selected || loading}
       >
-        Save Mood
+        {loading ? "Saving..." : "Save Mood"}
       </button>
 
-      {message && <p className="mt-4 text-sm">{message}</p>}
+      {/* Feedback */}
+      {message && <p className="mood-msg">{message}</p>}
     </div>
   );
 }

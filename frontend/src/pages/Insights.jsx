@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
-import {
-  Line
-} from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   LineElement,
   CategoryScale,
   LinearScale,
-  PointElement
+  PointElement,
+  Tooltip,
+  Legend
 } from "chart.js";
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Tooltip,
+  Legend
+);
 
 function Insights() {
   const [data, setData] = useState([]);
@@ -24,8 +31,8 @@ function Insights() {
   const fetchData = async () => {
     try {
       const res = await API.get("/analytics/timeline/1");
-      setData(res.data.timeline);
-      setTrend(res.data.trend_analysis);
+      setData(res.data.timeline || []);
+      setTrend(res.data.trend_analysis || {});
     } catch (err) {
       console.error(err);
     }
@@ -45,27 +52,94 @@ function Insights() {
       {
         label: "Mood Level",
         data: data.map((d) => moodMap[d.mood]),
-        borderWidth: 2
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7
       }
     ]
   };
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Insights</h1>
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color: "#cbd5e1"
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#94a3b8" },
+        grid: { color: "rgba(255,255,255,0.08)" }
+      },
+      y: {
+        min: 0,
+        max: 4,
+        ticks: {
+          color: "#94a3b8",
+          stepSize: 1
+        },
+        grid: { color: "rgba(255,255,255,0.08)" }
+      }
+    }
+  };
 
-      {/* Chart */}
-      <div className="bg-white/10 p-4 rounded-xl">
-        <Line data={chartData} />
+  return (
+    <div className="insights-page">
+      <div className="insights-header">
+        <h1>Emotional Insights</h1>
+        <p>Track your mood patterns, emotional signals, and wellness direction over time.</p>
       </div>
 
-      {/* Trend Info */}
-      <div className="mt-6 space-y-2">
-        <p>Overall Trend: {trend.overall_trend}</p>
-        <p>Mood Trend: {trend.mood_trend}</p>
-        <p>Risk Trend: {trend.risk_trend}</p>
-        <p>Dominant Emotion: {trend.dominant_emotion}</p>
-        <p className="mt-3 text-green-400">{trend.insight}</p>
+      <div className="insights-summary">
+        <div className="insights-summary-card">
+          <span>Overall Trend</span>
+          <strong>{trend.overall_trend || "Unknown"}</strong>
+        </div>
+
+        <div className="insights-summary-card">
+          <span>Mood Trend</span>
+          <strong>{trend.mood_trend || "Unknown"}</strong>
+        </div>
+
+        <div className="insights-summary-card">
+          <span>Dominant Emotion</span>
+          <strong>{trend.dominant_emotion || "Unknown"}</strong>
+        </div>
+      </div>
+
+      <div className="insights-chart-card">
+        <div className="chart-card-header">
+          <div>
+            <h2>Mood Timeline</h2>
+            <p>Happy = 4, Normal = 3, Low = 2, Overwhelmed = 1</p>
+          </div>
+        </div>
+
+        {data.length > 0 ? (
+          <Line data={chartData} options={chartOptions} />
+        ) : (
+          <p className="empty-insight">No timeline data available yet.</p>
+        )}
+      </div>
+
+      <div className="insights-detail-grid">
+        <div className="insights-detail-card">
+          <h3>Risk Trend</h3>
+          <p>{trend.risk_trend || "Unknown"}</p>
+        </div>
+
+        <div className="insights-detail-card">
+          <h3>Negative Emotion Count</h3>
+          <p>{trend.negative_emotion_count ?? 0}</p>
+        </div>
+      </div>
+
+      <div className="insight-message-card">
+        <h3>AI Insight</h3>
+        <p>{trend.insight || "Start using chat and mood check-ins to generate insights."}</p>
       </div>
     </div>
   );
