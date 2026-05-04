@@ -1,0 +1,58 @@
+text,intent
+hi,casual
+hello,casual
+hey,casual
+yo bro,casual
+what's up,casual
+nothing much,casual
+wby,casual
+lol,casual
+haha,casual
+i am scared,emotional_support
+im scared,emotional_support
+i feel anxious,emotional_support
+i feel stressed,emotional_support
+i am lonely,emotional_support
+i feel sad,emotional_support
+i am overwhelmed,emotional_support
+i feel worried,emotional_support
+i feel depressed,emotional_support
+i am crying,emotional_support
+wtf,frustration
+shut up,frustration
+i am angry,frustration
+this is annoying,frustration
+i hate this,frustration
+i am frustrated,frustration
+explain anxiety,guidance
+how to calm anxiety,guidance
+what is cbt,guidance
+teach me breathing exercise,guidance
+give me steps,guidance
+guide me,guidance
+explain in detail,guidance
+talk like gen z,style_request
+talk like a homie,style_request
+speak casually,style_request
+reply short,style_request
+make it detailed,style_request
+
+# 🔥 ADD BELOW THIS LINE
+bro im scared,emotional_support
+im really scared,emotional_support
+this is scary,emotional_support
+i feel panic,emotional_support
+im freaking out,emotional_support
+i dont feel safe,emotional_support
+
+yo bro whats up,casual
+nothing much bro,casual
+just chilling bro,casual
+nm wby,casual
+
+wtf is wrong,frustration
+this is so annoying,frustration
+im pissed,frustration
+
+can you explain anxiety in simple words,guidance
+how to reduce stress step by step,guidance

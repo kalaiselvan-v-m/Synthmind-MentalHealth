@@ -10,7 +10,7 @@ class ChatHistory(Base):
     user_id = Column(Integer, nullable=False)
     message = Column(Text, nullable=False)
     response = Column(Text, nullable=False)
-    mode = Column(String(50))  # vent / guidance / calm / cbt
+    mode = Column(String(50))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     emotion = Column(String(100), nullable=True)
     confidence = Column(String(50), nullable=True)

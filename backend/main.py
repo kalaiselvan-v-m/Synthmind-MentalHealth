@@ -10,8 +10,12 @@ from backend.routes.riskRoute import router as risk_router
 from backend.routes.analyticsRoute import router as analytics_router
 from backend.routes.recoveryPlanRoute import router as recovery_plan_router
 from backend.routes.recommendationRoute import router as recommendation_router
+from backend.routes.memoryRoute import router as memory_router
+from backend.routes.authRoute import router as auth_router
 
+from backend.models import userMemory
 from backend.models import onboarding
+from backend.models import user
 from backend.utils.onboardingQuestion import seed_onboarding_questions
 
 # ✅ CREATE APP ONLY ONCE
@@ -46,3 +50,5 @@ app.include_router(risk_router)
 app.include_router(analytics_router)
 app.include_router(recovery_plan_router)
 app.include_router(recommendation_router)
+app.include_router(memory_router)
+app.include_router(auth_router)
