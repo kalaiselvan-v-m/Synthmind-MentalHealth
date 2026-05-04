@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import API from "../api/api";
 
 function Chat() {
   const [message, setMessage] = useState("");
@@ -14,6 +13,8 @@ function Chat() {
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
 
+  const token = localStorage.getItem("token"); // 🔥 JWT
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -21,46 +22,94 @@ function Chat() {
   const sendMessage = async () => {
     if (!message.trim() || loading) return;
 
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
     const currentMessage = message;
     setMessage("");
 
     setMessages((prev) => [
       ...prev,
+      { sender: "user", text: currentMessage },
       {
-        sender: "user",
-        text: currentMessage,
+        sender: "ai",
+        text: "",
+        emotion: "streaming",
+        risk: "Low",
       },
     ]);
 
     setLoading(true);
 
     try {
-      const res = await API.post("/chat/send", {
-        user_id: 1,
-        message: currentMessage,
-        mode: "guidance",
+      const response = await fetch("http://127.0.0.1:8000/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // 🔥 JWT added
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          mode: "guidance",
+        }),
       });
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "ai",
-          text: res.data.reply,
-          emotion: res.data.emotion,
-          risk: res.data.riskLevel,
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let aiText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        aiText += chunk;
+
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            text: aiText,
+          };
+          return updated;
+        });
+      }
+
+      // 🔥 FIXED: JWT meta call (no user_id now)
+      const metaRes = await fetch("http://127.0.0.1:8000/chat/latest-meta", {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      ]);
+      });
+
+      const meta = await metaRes.json();
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          emotion: meta.emotion || "neutral",
+          risk: meta.riskLevel || "Low",
+        };
+        return updated;
+      });
+
     } catch (err) {
       console.error(err);
-      setMessages((prev) => [
-        ...prev,
-        {
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
           sender: "ai",
           text: "I’m having trouble connecting right now. Please try again.",
           emotion: "neutral",
           risk: "Low",
-        },
-      ]);
+        };
+        return updated;
+      });
     }
 
     setLoading(false);
@@ -101,27 +150,33 @@ function Chat() {
                       : "chatgpt-ai-bubble"
                   }`}
                 >
-                  {msg.text}
+                  {msg.text || " "}
+
+                  {msg.emotion === "streaming" && (
+                    <span className="typing-cursor">▋</span>
+                  )}
                 </div>
 
-                {msg.sender === "ai" && msg.emotion && (
-                  <div className="chatgpt-meta">
-                    <span className="chatgpt-pill emotion">
-                      Emotion: {msg.emotion}
-                    </span>
-                    <span
-                      className={`chatgpt-pill ${
-                        msg.risk === "High"
-                          ? "risk-high"
-                          : msg.risk === "Medium"
-                          ? "risk-medium"
-                          : "risk-low"
-                      }`}
-                    >
-                      Risk: {msg.risk}
-                    </span>
-                  </div>
-                )}
+                {msg.sender === "ai" &&
+                  msg.emotion &&
+                  msg.emotion !== "streaming" && (
+                    <div className="chatgpt-meta">
+                      <span className="chatgpt-pill emotion">
+                        Emotion: {msg.emotion}
+                      </span>
+                      <span
+                        className={`chatgpt-pill ${
+                          msg.risk === "High"
+                            ? "risk-high"
+                            : msg.risk === "Medium"
+                            ? "risk-medium"
+                            : "risk-low"
+                        }`}
+                      >
+                        Risk: {msg.risk}
+                      </span>
+                    </div>
+                  )}
               </div>
 
               {msg.sender === "user" && (
@@ -134,9 +189,9 @@ function Chat() {
             <div className="chatgpt-message-row chatgpt-ai-row">
               <div className="chatgpt-avatar chatgpt-ai-avatar">S</div>
               <div className="chatgpt-typing">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
               </div>
             </div>
           )}
