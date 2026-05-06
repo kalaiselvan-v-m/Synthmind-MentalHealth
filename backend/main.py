@@ -12,10 +12,18 @@ from backend.routes.recoveryPlanRoute import router as recovery_plan_router
 from backend.routes.recommendationRoute import router as recommendation_router
 from backend.routes.memoryRoute import router as memory_router
 from backend.routes.authRoute import router as auth_router
+from backend.routes.weeklyReportRoute import router as weekly_report_router
+from backend.routes.journalRoute import router as journal_router
+from backend.routes.moodCalendarRoute import router as mood_calendar_router
+from backend.routes.profileRoute import router as profile_router
+from backend.routes.habitSuggestionRoute import router as habit_router
+from backend.routes.habitTrackingRoute import router as habit_tracking_router
+from backend.routes.reminderRoute import router as reminder_router
 
 from backend.models import userMemory
 from backend.models import onboarding
 from backend.models import user
+from backend.models import habit
 from backend.utils.onboardingQuestion import seed_onboarding_questions
 
 # ✅ CREATE APP ONLY ONCE
@@ -52,3 +60,10 @@ app.include_router(recovery_plan_router)
 app.include_router(recommendation_router)
 app.include_router(memory_router)
 app.include_router(auth_router)
+app.include_router(weekly_report_router)
+app.include_router(journal_router)
+app.include_router(mood_calendar_router)
+app.include_router(profile_router)
+app.include_router(habit_router)
+app.include_router(habit_tracking_router)
+app.include_router(reminder_router)

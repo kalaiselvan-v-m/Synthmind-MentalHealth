@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.config.database import get_db
+from backend.models.user import User
+from backend.dependencies.authDependency import getCurrentUser
 from backend.models.onboarding import (
     OnboardingQuestion,
     OnboardingResponse,
@@ -39,7 +41,11 @@ def get_questions(db: Session = Depends(get_db)):
 
 
 @router.post("/answer")
-def submit_answer(data: SubmitAnswerRequest, db: Session = Depends(get_db)):
+def submit_answer(
+    data: SubmitAnswerRequest,
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser)
+):
     question = (
         db.query(OnboardingQuestion)
         .filter(OnboardingQuestion.id == data.question_id)
@@ -52,7 +58,7 @@ def submit_answer(data: SubmitAnswerRequest, db: Session = Depends(get_db)):
     old_answer = (
         db.query(OnboardingResponse)
         .filter(
-            OnboardingResponse.user_id == data.user_id,
+            OnboardingResponse.user_id == currentUser.id,
             OnboardingResponse.question_id == data.question_id,
         )
         .first()
@@ -64,7 +70,7 @@ def submit_answer(data: SubmitAnswerRequest, db: Session = Depends(get_db)):
         old_answer.answer_json = answer_json
     else:
         new_answer = OnboardingResponse(
-            user_id=data.user_id,
+            user_id=currentUser.id,
             question_id=data.question_id,
             answer_json=answer_json,
         )
@@ -75,12 +81,15 @@ def submit_answer(data: SubmitAnswerRequest, db: Session = Depends(get_db)):
     return {"message": "Answer saved successfully"}
 
 
-@router.get("/responses/{user_id}")
-def get_user_responses(user_id: int, db: Session = Depends(get_db)):
+@router.get("/responses")
+def get_user_responses(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser)
+):
     responses = (
         db.query(OnboardingResponse, OnboardingQuestion)
         .join(OnboardingQuestion, OnboardingResponse.question_id == OnboardingQuestion.id)
-        .filter(OnboardingResponse.user_id == user_id)
+        .filter(OnboardingResponse.user_id == currentUser.id)
         .all()
     )
 
@@ -94,12 +103,15 @@ def get_user_responses(user_id: int, db: Session = Depends(get_db)):
     ]
 
 
-@router.post("/complete/{user_id}", response_model=CompleteOnboardingResponse)
-def complete_onboarding(user_id: int, db: Session = Depends(get_db)):
+@router.post("/complete", response_model=CompleteOnboardingResponse)
+def complete_onboarding(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser)
+):
     responses = (
         db.query(OnboardingResponse, OnboardingQuestion)
         .join(OnboardingQuestion, OnboardingResponse.question_id == OnboardingQuestion.id)
-        .filter(OnboardingResponse.user_id == user_id)
+        .filter(OnboardingResponse.user_id == currentUser.id)
         .all()
     )
 
@@ -124,7 +136,7 @@ def complete_onboarding(user_id: int, db: Session = Depends(get_db)):
 
     existing_profile = (
         db.query(UserMentalProfile)
-        .filter(UserMentalProfile.user_id == user_id)
+        .filter(UserMentalProfile.user_id == currentUser.id)
         .first()
     )
 
@@ -139,7 +151,7 @@ def complete_onboarding(user_id: int, db: Session = Depends(get_db)):
         existing_profile.personality_summary = profile_data["personality_summary"]
     else:
         new_profile = UserMentalProfile(
-            user_id=user_id,
+            user_id=currentUser.id,
             pronouns=pronouns,
             age_group=age_group,
             stress_score=profile_data["stress_score"],
@@ -154,7 +166,7 @@ def complete_onboarding(user_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {
-        "user_id": user_id,
+        "user_id": currentUser.id,
         "wellness_score": profile_data["wellness_score"],
         "stress_score": profile_data["stress_score"],
         "emotional_state": profile_data["emotional_state"],
@@ -165,11 +177,14 @@ def complete_onboarding(user_id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/profile/{user_id}")
-def get_profile(user_id: int, db: Session = Depends(get_db)):
+@router.get("/profile")
+def get_profile(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser)
+):
     profile = (
         db.query(UserMentalProfile)
-        .filter(UserMentalProfile.user_id == user_id)
+        .filter(UserMentalProfile.user_id == currentUser.id)
         .first()
     )
 
@@ -177,3 +192,19 @@ def get_profile(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Profile not found")
 
     return profile
+
+
+@router.get("/status")
+def onboarding_status(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser)
+):
+    profile = (
+        db.query(UserMentalProfile)
+        .filter(UserMentalProfile.user_id == currentUser.id)
+        .first()
+    )
+
+    return {
+        "completed": profile is not None
+    }

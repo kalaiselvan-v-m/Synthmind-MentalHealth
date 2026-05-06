@@ -3,19 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleRegister = async (e) => {
@@ -26,9 +19,7 @@ function Register() {
     try {
       const res = await fetch("http://127.0.0.1:8000/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
@@ -43,7 +34,8 @@ function Register() {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data));
 
-      navigate("/chat");
+      // ✅ New users must complete onboarding first
+      navigate("/onboarding");
     } catch (err) {
       console.error(err);
       setError("Backend connection failed");
@@ -59,32 +51,9 @@ function Register() {
         <p>Start your private emotional wellness space</p>
 
         <form onSubmit={handleRegister} className="auth-form">
-          <input
-            name="name"
-            type="text"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
+          <input name="name" type="text" placeholder="Name" value={form.name} onChange={handleChange} required />
+          <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+          <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
 
           {error && <div className="auth-error">{error}</div>}
 

@@ -1,77 +1,78 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import API from "../api/api";
 
-const moods = [
-  { label: "Happy", emoji: "😊" },
-  { label: "Normal", emoji: "😐" },
-  { label: "Low", emoji: "😔" },
-  { label: "Overwhelmed", emoji: "😵" }
-];
-
 function Mood() {
-  const [selected, setSelected] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
-  const saveMood = async () => {
-    if (!selected || loading) return;
+  useEffect(() => {
+    fetchMoodData();
+  }, []);
 
-    setLoading(true);
-    setMessage("");
-
+  const fetchMoodData = async () => {
     try {
-      await API.post("/mood/checkin", {
-        user_id: 1,
-        mood: selected,
-        note: ""
-      });
-
-      setMessage("Saved successfully ✨");
-      setSelected("");
+      const res = await API.get("/mood/calendar/1");
+      setData(res.data);
     } catch (err) {
       console.error(err);
-      setMessage("Something went wrong ❌");
+      setError("Failed to load mood insights");
     }
-
-    setLoading(false);
   };
+
+  if (error) {
+    return <div className="mood-page"><p>{error}</p></div>;
+  }
+
+  if (!data) {
+    return <div className="mood-page"><p>Loading mood insights...</p></div>;
+  }
 
   return (
     <div className="mood-page">
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="mood-header">
-        <h1>How are you feeling today?</h1>
-        <p>Take a moment to check in with yourself</p>
+        <h1>Mood Insights</h1>
+        <p>Understand your emotional patterns</p>
       </div>
 
-      {/* Mood Cards */}
-      <div className="mood-grid">
-        {moods.map((m) => (
+      {/* SUMMARY */}
+      <div className="mood-summary">
+        <div>
+          <span>Dominant Mood</span>
+          <strong>{data.dominantMood}</strong>
+        </div>
+
+        <div>
+          <span>Positive Days</span>
+          <strong>{data.positiveDays}</strong>
+        </div>
+
+        <div>
+          <span>Low Days</span>
+          <strong>{data.negativeDays}</strong>
+        </div>
+      </div>
+
+      {/* CALENDAR */}
+      <div className="mood-calendar">
+        {data.days.map((day, index) => (
           <div
-            key={m.label}
-            className={`mood-card ${
-              selected === m.label ? "selected" : ""
-            }`}
-            onClick={() => setSelected(m.label)}
+            key={index}
+            className="calendar-cell"
+            title={`${day.date} - ${day.mood}`}
           >
-            <div className="mood-emoji">{m.emoji}</div>
-            <div className="mood-label">{m.label}</div>
+            {day.emoji}
           </div>
         ))}
       </div>
 
-      {/* Save Button */}
-      <button
-        className="mood-save-btn"
-        onClick={saveMood}
-        disabled={!selected || loading}
-      >
-        {loading ? "Saving..." : "Save Mood"}
-      </button>
+      {/* INSIGHT */}
+      <div className="mood-insight-box">
+        <h3>Insight</h3>
+        <p>{data.insight}</p>
+      </div>
 
-      {/* Feedback */}
-      {message && <p className="mood-msg">{message}</p>}
     </div>
   );
 }

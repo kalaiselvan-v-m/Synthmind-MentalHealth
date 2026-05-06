@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Union, Optional
+from typing import List, Union
 
 
 class OnboardingQuestionResponse(BaseModel):
@@ -12,7 +12,6 @@ class OnboardingQuestionResponse(BaseModel):
 
 
 class SubmitAnswerRequest(BaseModel):
-    user_id: int
     question_id: int
     answer: Union[str, List[str]]
 

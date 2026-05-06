@@ -3,18 +3,25 @@ import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const checkOnboardingStatus = async (token) => {
+    const res = await fetch("http://127.0.0.1:8000/onboarding/status", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
+
+    if (!res.ok) return false;
+
+    const status = await res.json();
+    return status.completed;
   };
 
   const handleLogin = async (e) => {
@@ -25,9 +32,7 @@ function Login() {
     try {
       const res = await fetch("http://127.0.0.1:8000/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
@@ -42,7 +47,13 @@ function Login() {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data));
 
-      navigate("/chat");
+      const completed = await checkOnboardingStatus(data.access_token);
+
+      if (completed) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
     } catch (err) {
       console.error(err);
       setError("Backend connection failed");
@@ -58,23 +69,8 @@ function Login() {
         <p>Login to continue your SynthMind journey</p>
 
         <form onSubmit={handleLogin} className="auth-form">
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
+          <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+          <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
 
           {error && <div className="auth-error">{error}</div>}
 
