@@ -5,62 +5,162 @@ from backend.models.userMemory import UserMemory
 from backend.service.memoryLLMService import extractMemoryWithLLM
 
 
+# -----------------------------------
+# 🔥 FALLBACK MEMORY EXTRACTION
+# -----------------------------------
 def fallbackExtractMemory(message: str):
     msg = message.lower()
+
     memories = []
 
-    if "exam" in msg or "test" in msg:
+    # -----------------------------------
+    # EXAM / STUDY
+    # -----------------------------------
+    if any(word in msg for word in ["exam", "test", "assignment", "deadline"]):
         memories.append({
             "type": "stress_trigger",
-            "key": "exam_stress",
-            "value": "User may feel stressed about exams",
+            "key": "academic_pressure",
+            "value": "User often feels stressed about academic pressure.",
             "importance": 3
         })
 
-    if "interview" in msg:
+    # -----------------------------------
+    # INTERVIEW / CAREER
+    # -----------------------------------
+    if any(word in msg for word in ["interview", "placement", "job", "career"]):
         memories.append({
             "type": "stress_trigger",
-            "key": "interview_stress",
-            "value": "User may feel nervous about interviews",
+            "key": "career_anxiety",
+            "value": "User becomes nervous about career or interview situations.",
             "importance": 3
         })
 
-    if "talk like a homie" in msg or "talk like a friend" in msg or "bro" in msg:
-        memories.append({
-            "type": "preference",
-            "key": "casual_tone",
-            "value": "User prefers casual friendly tone",
-            "importance": 2
-        })
-
-    if "short reply" in msg or "reply short" in msg or "make it short" in msg:
-        memories.append({
-            "type": "preference",
-            "key": "short_replies",
-            "value": "User prefers short replies",
-            "importance": 2
-        })
-
-    if "anxious" in msg or "anxiety" in msg:
+    # -----------------------------------
+    # ANXIETY
+    # -----------------------------------
+    if any(word in msg for word in ["anxiety", "anxious", "panic", "overthinking"]):
         memories.append({
             "type": "emotion_pattern",
             "key": "anxiety_pattern",
-            "value": "User has mentioned anxiety",
+            "value": "User experiences anxiety or overthinking patterns.",
             "importance": 3
         })
 
-    if "scared" in msg or "afraid" in msg:
+    # -----------------------------------
+    # FEAR
+    # -----------------------------------
+    if any(word in msg for word in ["scared", "fear", "afraid"]):
         memories.append({
             "type": "emotion_pattern",
             "key": "fear_pattern",
-            "value": "User has mentioned feeling scared",
+            "value": "User sometimes feels fearful or emotionally unsafe.",
             "importance": 3
+        })
+
+    # -----------------------------------
+    # SLEEP
+    # -----------------------------------
+    if any(word in msg for word in ["sleep", "insomnia", "awake", "tired"]):
+        memories.append({
+            "type": "recurring_issue",
+            "key": "sleep_issue",
+            "value": "User may struggle with sleep or rest.",
+            "importance": 2
+        })
+
+    # -----------------------------------
+    # LONELINESS
+    # -----------------------------------
+    if any(word in msg for word in ["lonely", "alone", "isolated"]):
+        memories.append({
+            "type": "emotion_pattern",
+            "key": "loneliness_pattern",
+            "value": "User may experience loneliness sometimes.",
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # MOTIVATION
+    # -----------------------------------
+    if any(word in msg for word in ["unmotivated", "motivation", "lazy", "burnout"]):
+        memories.append({
+            "type": "recurring_issue",
+            "key": "motivation_issue",
+            "value": "User struggles with motivation or burnout at times.",
+            "importance": 2
+        })
+
+    # -----------------------------------
+    # FAMILY PRESSURE
+    # -----------------------------------
+    if any(word in msg for word in ["family pressure", "parents", "expectation"]):
+        memories.append({
+            "type": "stress_trigger",
+            "key": "family_pressure",
+            "value": "Family expectations may emotionally affect the user.",
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # SOCIAL ANXIETY
+    # -----------------------------------
+    if any(word in msg for word in ["social anxiety", "people judge", "awkward"]):
+        memories.append({
+            "type": "emotion_pattern",
+            "key": "social_anxiety",
+            "value": "User may feel socially anxious or judged.",
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # CONFIDENCE
+    # -----------------------------------
+    if any(word in msg for word in ["confidence", "self doubt", "not good enough"]):
+        memories.append({
+            "type": "emotion_pattern",
+            "key": "confidence_issue",
+            "value": "User struggles with confidence or self-doubt.",
+            "importance": 2
+        })
+
+    # -----------------------------------
+    # COPING STRATEGIES
+    # -----------------------------------
+    if any(word in msg for word in ["music helps", "journaling helps", "walking helps"]):
+        memories.append({
+            "type": "coping_strategy",
+            "key": "healthy_coping",
+            "value": "User already has some healthy coping strategies.",
+            "importance": 2
+        })
+
+    # -----------------------------------
+    # TONE PREFERENCES
+    # -----------------------------------
+    if any(word in msg for word in ["bro", "homie", "talk casually", "friend"]):
+        memories.append({
+            "type": "preference",
+            "key": "casual_tone",
+            "value": "User prefers a casual friendly conversational tone.",
+            "importance": 2
+        })
+
+    if any(word in msg for word in ["short replies", "reply short", "keep it short"]):
+        memories.append({
+            "type": "preference",
+            "key": "short_reply_preference",
+            "value": "User prefers shorter responses.",
+            "importance": 2
         })
 
     return memories
 
 
+# -----------------------------------
+# 🔥 SAVE MEMORY
+# -----------------------------------
 def saveMemory(db: Session, user_id: int, memory: dict):
+
     if not memory.get("key") or not memory.get("value"):
         return None
 
@@ -71,7 +171,7 @@ def saveMemory(db: Session, user_id: int, memory: dict):
     except Exception:
         importance = 1
 
-    importance = max(1, min(importance, 3))
+    importance = max(1, min(importance, 5))
 
     existing = (
         db.query(UserMemory)
@@ -82,17 +182,26 @@ def saveMemory(db: Session, user_id: int, memory: dict):
         .first()
     )
 
+    # -----------------------------------
+    # REINFORCE EXISTING MEMORY
+    # -----------------------------------
     if existing:
         existing.memory_type = memory.get("type", existing.memory_type)
         existing.memory_value = memory["value"]
 
-        # Reinforcement: repeated memories become stronger.
-        existing.importance = min(3, max(existing.importance, importance) + 1)
+        existing.importance = min(
+            5,
+            max(existing.importance, importance) + 1
+        )
 
         db.commit()
         db.refresh(existing)
+
         return existing
 
+    # -----------------------------------
+    # CREATE NEW MEMORY
+    # -----------------------------------
     newMemory = UserMemory(
         user_id=user_id,
         memory_type=memory.get("type", "general"),
@@ -108,15 +217,19 @@ def saveMemory(db: Session, user_id: int, memory: dict):
     return newMemory
 
 
+# -----------------------------------
+# 🔥 UPDATE LONG TERM MEMORY
+# -----------------------------------
 def updateLongTermMemory(db: Session, user_id: int, message: str):
+
     memories = []
 
     try:
         memories = extractMemoryWithLLM(message)
     except Exception as e:
         print("LLM memory extraction failed:", str(e))
-        memories = []
 
+    # fallback
     if not memories:
         memories = fallbackExtractMemory(message)
 
@@ -124,49 +237,25 @@ def updateLongTermMemory(db: Session, user_id: int, message: str):
 
     for memory in memories:
         saved = saveMemory(db, user_id, memory)
+
         if saved:
             savedMemories.append(saved)
 
     return savedMemories
 
 
-def getRelevantMemories(db: Session, user_id: int, message: str, limit: int = 5):
+# -----------------------------------
+# 🔥 SMART MEMORY RETRIEVAL
+# -----------------------------------
+def getRelevantMemories(
+    db: Session,
+    user_id: int,
+    message: str,
+    limit: int = 6
+):
+
     msg = message.lower()
 
-    query = db.query(UserMemory).filter(UserMemory.user_id == user_id)
-
-    if "exam" in msg or "test" in msg:
-        query = query.filter(UserMemory.memory_key.contains("exam"))
-
-    elif "interview" in msg:
-        query = query.filter(UserMemory.memory_key.contains("interview"))
-
-    elif "anxiety" in msg or "anxious" in msg:
-        query = query.filter(UserMemory.memory_key.contains("anxiety"))
-
-    elif "scared" in msg or "afraid" in msg:
-        query = query.filter(UserMemory.memory_key.contains("fear"))
-
-    else:
-        query = query.order_by(UserMemory.importance.desc())
-
-    memories = query.limit(limit).all()
-
-    cleanMemories = []
-
-    for memory in memories:
-        if memory.memory_key in ["short_key", "mention"]:
-            continue
-
-        if "clear human-readable memory" in memory.memory_value.lower():
-            continue
-
-        cleanMemories.append(memory.memory_value)
-
-    return " | ".join(cleanMemories)
-
-
-def getPersonalityProfile(db: Session, user_id: int):
     memories = (
         db.query(UserMemory)
         .filter(UserMemory.user_id == user_id)
@@ -174,49 +263,154 @@ def getPersonalityProfile(db: Session, user_id: int):
         .all()
     )
 
-    preferences = []
-    emotionalPatterns = []
-    stressTriggers = []
+    scored = []
 
     for memory in memories:
+
+        score = memory.importance
+
+        key = memory.memory_key.lower()
+        value = memory.memory_value.lower()
+
+        # -----------------------------------
+        # TOPIC MATCHING
+        # -----------------------------------
+        if any(word in msg for word in ["exam", "test", "assignment"]):
+            if "academic" in key or "exam" in value:
+                score += 5
+
+        if any(word in msg for word in ["interview", "placement", "career"]):
+            if "career" in key or "interview" in value:
+                score += 5
+
+        if any(word in msg for word in ["anxiety", "panic", "overthinking"]):
+            if "anxiety" in key:
+                score += 4
+
+        if any(word in msg for word in ["sleep", "tired"]):
+            if "sleep" in key:
+                score += 4
+
+        if any(word in msg for word in ["alone", "lonely"]):
+            if "loneliness" in key:
+                score += 4
+
+        # -----------------------------------
+        # IMPORTANT MEMORY TYPES
+        # -----------------------------------
+        if memory.memory_type == "coping_strategy":
+            score += 1
+
+        if memory.memory_type == "stress_trigger":
+            score += 2
+
+        if memory.memory_type == "emotion_pattern":
+            score += 2
+
+        scored.append((score, memory))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    finalMemories = []
+
+    for score, memory in scored[:limit]:
+
         if memory.memory_key in ["short_key", "mention"]:
             continue
 
         if "clear human-readable memory" in memory.memory_value.lower():
             continue
 
-        if memory.memory_type == "preference":
-            preferences.append(memory.memory_value)
+        finalMemories.append(memory.memory_value)
 
-        elif memory.memory_type == "emotion_pattern":
-            emotionalPatterns.append(memory.memory_value)
+    return " | ".join(finalMemories)
 
-        elif memory.memory_type == "stress_trigger":
-            stressTriggers.append(memory.memory_value)
 
-    return {
-        "preferences": preferences[:5],
-        "emotionalPatterns": emotionalPatterns[:5],
-        "stressTriggers": stressTriggers[:5]
+# -----------------------------------
+# 🔥 PERSONALITY PROFILE
+# -----------------------------------
+def getPersonalityProfile(db: Session, user_id: int):
+
+    memories = (
+        db.query(UserMemory)
+        .filter(UserMemory.user_id == user_id)
+        .order_by(UserMemory.importance.desc())
+        .all()
+    )
+
+    grouped = {
+        "preferences": [],
+        "emotionalPatterns": [],
+        "stressTriggers": [],
+        "copingStrategies": [],
+        "goals": []
     }
 
+    for memory in memories:
 
+        if memory.memory_type == "preference":
+            grouped["preferences"].append(memory.memory_value)
+
+        elif memory.memory_type == "emotion_pattern":
+            grouped["emotionalPatterns"].append(memory.memory_value)
+
+        elif memory.memory_type == "stress_trigger":
+            grouped["stressTriggers"].append(memory.memory_value)
+
+        elif memory.memory_type == "coping_strategy":
+            grouped["copingStrategies"].append(memory.memory_value)
+
+        elif memory.memory_type == "goal":
+            grouped["goals"].append(memory.memory_value)
+
+    return grouped
+
+
+# -----------------------------------
+# 🔥 FORMAT PERSONALITY PROFILE
+# -----------------------------------
 def formatPersonalityProfile(profile: dict):
+
     parts = []
 
     if profile["preferences"]:
-        parts.append("User preferences: " + " | ".join(profile["preferences"]))
+        parts.append(
+            "User preferences: " +
+            " | ".join(profile["preferences"][:5])
+        )
 
     if profile["emotionalPatterns"]:
-        parts.append("Emotional patterns: " + " | ".join(profile["emotionalPatterns"]))
+        parts.append(
+            "Emotional patterns: " +
+            " | ".join(profile["emotionalPatterns"][:5])
+        )
 
     if profile["stressTriggers"]:
-        parts.append("Stress triggers: " + " | ".join(profile["stressTriggers"]))
+        parts.append(
+            "Stress triggers: " +
+            " | ".join(profile["stressTriggers"][:5])
+        )
+
+    if profile["copingStrategies"]:
+        parts.append(
+            "Helpful coping methods: " +
+            " | ".join(profile["copingStrategies"][:5])
+        )
+
+    if profile["goals"]:
+        parts.append(
+            "User goals: " +
+            " | ".join(profile["goals"][:5])
+        )
 
     return "\n".join(parts)
 
 
+# -----------------------------------
+# 🔥 MEMORY DECAY
+# -----------------------------------
 def decayMemories(db: Session, user_id: int):
+
     memories = (
         db.query(UserMemory)
         .filter(UserMemory.user_id == user_id)
@@ -226,6 +420,7 @@ def decayMemories(db: Session, user_id: int):
     now = datetime.now(timezone.utc)
 
     for memory in memories:
+
         if not memory.created_at:
             continue
 
@@ -236,13 +431,15 @@ def decayMemories(db: Session, user_id: int):
 
         ageDays = (now - createdAt).days
 
-        if ageDays >= 7:
+        # gradual decay
+        if ageDays >= 10:
             memory.importance = max(1, memory.importance - 1)
 
-        if ageDays >= 14:
+        if ageDays >= 20:
             memory.importance = max(1, memory.importance - 1)
 
-        if memory.importance <= 1 and ageDays > 10:
+        # remove weak stale memories
+        if memory.importance <= 1 and ageDays > 30:
             db.delete(memory)
 
     db.commit()

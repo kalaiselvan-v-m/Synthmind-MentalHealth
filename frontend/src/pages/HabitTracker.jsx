@@ -1,5 +1,31 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  CheckCircle2,
+  Flame,
+  Sparkles,
+  TrendingUp,
+  Leaf,
+  Bell,
+} from "lucide-react";
 import { sendNotification } from "../utils/reminder";
+
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 28,
+    filter: "blur(10px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.75,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
 function HabitTracker() {
   const token = localStorage.getItem("token");
@@ -76,7 +102,7 @@ function HabitTracker() {
 
   if (error) {
     return (
-      <div className="habit-tracker-page">
+      <div className="habit-tracker-page synth-habit-page">
         <p>{error}</p>
       </div>
     );
@@ -84,78 +110,161 @@ function HabitTracker() {
 
   if (!data) {
     return (
-      <div className="habit-tracker-page">
+      <div className="habit-tracker-page synth-habit-page">
         <p>Loading habit tracker...</p>
       </div>
     );
   }
 
   return (
-    <div className="habit-tracker-page">
-      {celebration && <div className="streak-toast">🎉 {celebration}</div>}
+    <div className="habit-tracker-page synth-habit-page">
+      {celebration && (
+        <motion.div
+          className="synth-streak-toast"
+          initial={{ opacity: 0, y: -18, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, y: -18, filter: "blur(8px)" }}
+        >
+          <Sparkles size={18} />
+          <span>{celebration}</span>
+        </motion.div>
+      )}
 
-      <div className="habit-tracker-header">
-        <h1>Habit Tracker</h1>
-        <p>Track small wellness habits and build daily streaks.</p>
-      </div>
+      <motion.section
+        className="synth-habit-hero"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <p>Habit rhythm</p>
 
-      <div className="habit-tracker-summary">
-        <div>
-          <span>Completed Today</span>
+        <h1>
+          Small rituals,
+          <span> softly repeated.</span>
+        </h1>
+
+        <small>
+          Track tiny wellness habits, protect your streaks, and build emotional
+          consistency without pressure.
+        </small>
+      </motion.section>
+
+      <motion.section
+        className="synth-habit-summary"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="synth-habit-stat">
+          <CheckCircle2 size={20} />
+          <span>Completed today</span>
           <strong>{data.totalCompletedToday}</strong>
         </div>
 
-        <div>
-          <span>Best Streak</span>
-          <strong>🔥 {data.bestStreak} days</strong>
+        <div className="synth-habit-stat">
+          <Flame size={20} />
+          <span>Best streak</span>
+          <strong>{data.bestStreak} days</strong>
         </div>
 
-        <div>
-          <span>Weekly Trend</span>
+        <div className="synth-habit-stat">
+          <TrendingUp size={20} />
+          <span>Weekly trend</span>
           <strong>{data.trend}</strong>
         </div>
-      </div>
+      </motion.section>
 
-      <div className="habit-tracker-list">
+      <motion.section
+        className="synth-habit-list-header"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <p>Today’s care actions</p>
+        <h2>Choose one gentle step.</h2>
+      </motion.section>
+
+      <div className="synth-habit-list">
         {data.habits.map((habit, index) => (
-          <div
+          <motion.article
             key={index}
-            className={`habit-track-card ${
+            className={`synth-habit-card ${
               habit.completedToday ? "done" : ""
             }`}
+            initial={{
+              opacity: 0,
+              y: 26,
+              filter: "blur(10px)",
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+              filter: "blur(0px)",
+            }}
+            viewport={{ once: true, amount: 0.12 }}
+            transition={{
+              duration: 0.65,
+              delay: index * 0.05,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            whileHover={{
+              y: -5,
+              transition: {
+                type: "spring",
+                stiffness: 220,
+                damping: 18,
+              },
+            }}
           >
-            <div className="habit-track-top">
+            <div className="synth-habit-card-top">
               <div>
-                <span className="habit-category">{habit.category}</span>
+                <span className="synth-habit-category">{habit.category}</span>
                 <h2>{habit.title}</h2>
               </div>
 
-              <div className="habit-reward-badge">
-                {habit.reward?.badge || "○ Not Started"}
+              <div className="synth-habit-badge">
+                {habit.completedToday ? (
+                  <>
+                    <CheckCircle2 size={15} />
+                    <span>Done</span>
+                  </>
+                ) : (
+                  <>
+                    <Bell size={15} />
+                    <span>{habit.reward?.badge || "Not Started"}</span>
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="habit-reward-box">
-              <div className="habit-reward-info">
-                <span>{habit.reward?.level || "Not started"}</span>
-                <strong>🔥 {habit.streak} day streak</strong>
+            <div className="synth-habit-reward">
+              <div className="synth-habit-reward-top">
+                <div>
+                  <span>{habit.reward?.level || "Not started"}</span>
+                  <strong>{habit.reward?.progress || 0}% progress</strong>
+                </div>
+
+                <p>
+                  <Flame size={15} />
+                  {habit.streak} day streak
+                </p>
               </div>
 
-              <div className="habit-progress-bar">
+              <div className="synth-habit-progress">
                 <div
-                  className="habit-progress-fill"
                   style={{ width: `${habit.reward?.progress || 0}%` }}
                 ></div>
               </div>
 
-              <p>{habit.reward?.message}</p>
+              <small>{habit.reward?.message}</small>
             </div>
 
-            <p className="habit-reason">{habit.reason}</p>
+            <p className="synth-habit-reason">{habit.reason}</p>
 
-            <div className="habit-steps">
+            <div className="synth-habit-steps">
               {habit.steps.map((step, stepIndex) => (
-                <div key={stepIndex} className="habit-step">
+                <div key={stepIndex} className="synth-habit-step">
                   <span>{stepIndex + 1}</span>
                   <p>{step}</p>
                 </div>
@@ -163,13 +272,23 @@ function HabitTracker() {
             </div>
 
             <button
-              className="habit-done-btn"
+              className="synth-habit-done-btn"
               disabled={habit.completedToday}
               onClick={() => markDone(habit)}
             >
-              {habit.completedToday ? "Completed Today ✓" : "Mark as Done"}
+              {habit.completedToday ? (
+                <>
+                  <CheckCircle2 size={17} />
+                  Completed today
+                </>
+              ) : (
+                <>
+                  <Leaf size={17} />
+                  Mark as done
+                </>
+              )}
             </button>
-          </div>
+          </motion.article>
         ))}
       </div>
     </div>

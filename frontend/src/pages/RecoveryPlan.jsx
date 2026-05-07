@@ -1,5 +1,35 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import API from "../api/api";
+import {
+  Brain,
+  HeartHandshake,
+  Moon,
+  NotebookPen,
+  ShieldCheck,
+  Sparkles,
+  Wind,
+  Activity,
+  Leaf,
+  TrendingUp,
+} from "lucide-react";
+
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 28,
+    filter: "blur(10px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.75,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
 function RecoveryPlan() {
   const [data, setData] = useState(null);
@@ -17,84 +47,191 @@ function RecoveryPlan() {
     }
   };
 
-  if (!data) return <div className="recovery-page">Loading plan...</div>;
+  if (!data) {
+    return <div className="recovery-page synth-recovery-page">Loading plan...</div>;
+  }
 
   const tasks = [
-    ["Breathing", data.breathing_exercise],
-    ["CBT Task", data.cbt_task],
-    ["Journaling", data.journaling_task],
-    ["Sleep Tip", data.sleep_tip],
-    ["Habit Goal", data.habit_goal],
+    {
+      title: "Breathing",
+      value: data.breathing_exercise,
+      icon: <Wind size={20} />,
+    },
+    {
+      title: "CBT Task",
+      value: data.cbt_task,
+      icon: <Brain size={20} />,
+    },
+    {
+      title: "Journaling",
+      value: data.journaling_task,
+      icon: <NotebookPen size={20} />,
+    },
+    {
+      title: "Sleep Tip",
+      value: data.sleep_tip,
+      icon: <Moon size={20} />,
+    },
+    {
+      title: "Habit Goal",
+      value: data.habit_goal,
+      icon: <Leaf size={20} />,
+    },
   ];
 
   return (
-    <div className="recovery-page">
-      <div className="recovery-header">
-        <h1>Recovery Plan</h1>
-        <p>Your personalized daily wellness routine generated from mood, emotion, and risk signals.</p>
-      </div>
+    <div className="recovery-page synth-recovery-page">
+      <motion.section
+        className="synth-recovery-hero"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <p>Recovery plan</p>
 
-      <div className="recovery-summary">
-        <div className={`recovery-summary-card risk-${data.risk_level.toLowerCase()}`}>
-          <span>Risk Level</span>
+        <h1>
+          A calm roadmap
+          <span> for today.</span>
+        </h1>
+
+        <small>
+          Your care plan is shaped from mood, emotion, and risk signals so your
+          next steps feel gentle, practical, and personal.
+        </small>
+      </motion.section>
+
+      <motion.section
+        className="synth-recovery-summary"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="synth-recovery-stat">
+          <ShieldCheck size={20} />
+          <span>Risk level</span>
           <strong>{data.risk_level}</strong>
         </div>
 
-        <div className="recovery-summary-card">
-          <span>Overall Trend</span>
+        <div className="synth-recovery-stat">
+          <TrendingUp size={20} />
+          <span>Overall trend</span>
           <strong>{data.overall_trend}</strong>
         </div>
 
-        <div className="recovery-summary-card">
-          <span>Dominant Emotion</span>
+        <div className="synth-recovery-stat">
+          <Sparkles size={20} />
+          <span>Dominant emotion</span>
           <strong>{data.dominant_emotion}</strong>
         </div>
-      </div>
+      </motion.section>
 
-      <section className="recovery-section">
-        <h2>Daily Routine</h2>
+      <motion.section
+        className="synth-recovery-section"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="synth-recovery-section-title">
+          <p>Daily routine</p>
+          <h2>Follow these tiny steps.</h2>
+        </div>
 
-        <div className="routine-list">
-          {data.daily_routine.map((item, i) => (
-            <div key={i} className="routine-item">
-              <div className="routine-number">{i + 1}</div>
+        <div className="synth-routine-list">
+          {data.daily_routine.map((item, index) => (
+            <motion.div
+              key={index}
+              className="synth-routine-item"
+              initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.55, delay: index * 0.05 }}
+              whileHover={{ y: -4 }}
+            >
+              <div>{index + 1}</div>
               <p>{item}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      <section className="recovery-section">
-        <h2>Care Tasks</h2>
+      <motion.section
+        className="synth-recovery-section"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="synth-recovery-section-title">
+          <p>Care tasks</p>
+          <h2>Your support toolkit.</h2>
+        </div>
 
-        <div className="care-task-grid">
-          {tasks.map(([title, value], i) => (
-            <div key={i} className="care-task-card">
-              <h3>{title}</h3>
-              <p>{value}</p>
-            </div>
+        <div className="synth-care-grid">
+          {tasks.map((task, index) => (
+            <motion.article
+              key={task.title}
+              className="synth-care-card"
+              initial={{ opacity: 0, y: 22, filter: "blur(8px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: index * 0.05 }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="synth-care-icon">{task.icon}</div>
+              <span>{task.title}</span>
+              <p>{task.value}</p>
+            </motion.article>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      <section className="recovery-section">
-        <h2>Suggested Activities</h2>
+      <motion.section
+        className="synth-recovery-section"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="synth-recovery-section-title">
+          <p>Suggested activities</p>
+          <h2>Small things that may help.</h2>
+        </div>
 
-        <div className="activity-list">
-          {data.recommended_activities.map((rec, i) => (
-            <div key={i} className="activity-card">
-              {rec}
-            </div>
+        <div className="synth-activity-list">
+          {data.recommended_activities.map((rec, index) => (
+            <motion.div
+              key={index}
+              className="synth-activity-card"
+              initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
+              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.55, delay: index * 0.05 }}
+            >
+              <Activity size={17} />
+              <span>{rec}</span>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      <div className="therapy-card">
-        <h3>Therapy Suggestion</h3>
-        <p>{data.therapy_suggestion}</p>
-      </div>
+      <motion.section
+        className="synth-therapy-card"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <HeartHandshake size={22} />
 
-      <p className="recovery-note">{data.note}</p>
+        <div>
+          <p>Therapy suggestion</p>
+          <h2>Professional support note</h2>
+          <span>{data.therapy_suggestion}</span>
+        </div>
+      </motion.section>
+
+      {data.note && <p className="synth-recovery-note">{data.note}</p>}
     </div>
   );
 }

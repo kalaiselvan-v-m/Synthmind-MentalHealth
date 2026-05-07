@@ -9,6 +9,7 @@ from backend.service.riskService import calculateRiskScore
 from backend.service.emojiService import detectEmojiEmotions
 from backend.service.conversationBrainService import analyzeConversation
 from backend.service.emotionTimelineService import buildEmotionTimelineSummary
+from backend.service.crisisService import analyzeCrisis
 from backend.service.memoryService import (
     updateLongTermMemory,
     getRelevantMemories,
@@ -16,17 +17,12 @@ from backend.service.memoryService import (
     formatPersonalityProfile,
     decayMemories
 )
-
-# ✅ NEW IMPORT
 from backend.service.personalityStyleService import (
     detectPersonalityStyle,
     formatPersonalityStyle
 )
 
 
-# -------------------------------
-# 🔹 EMOTION INTENSITY
-# -------------------------------
 def getEmotionIntensity(confidence: float):
     if confidence > 0.85:
         return "high"
@@ -35,9 +31,6 @@ def getEmotionIntensity(confidence: float):
     return "low"
 
 
-# -------------------------------
-# 🔹 ESCALATION CHECK
-# -------------------------------
 def shouldEscalate(db: Session, user_id: int):
     recent = (
         db.query(ChatHistory)
@@ -48,6 +41,7 @@ def shouldEscalate(db: Session, user_id: int):
     )
 
     negative = 0
+
     for chat in recent:
         if chat.emotion in ["fear", "sadness", "grief", "nervousness"]:
             negative += 1
@@ -55,9 +49,6 @@ def shouldEscalate(db: Session, user_id: int):
     return negative >= 3
 
 
-# -------------------------------
-# 🔹 FETCH USER PROFILE
-# -------------------------------
 def getUserProfile(db: Session, user_id: int):
     return (
         db.query(UserMentalProfile)
@@ -66,10 +57,23 @@ def getUserProfile(db: Session, user_id: int):
     )
 
 
-# -------------------------------
-# 🔹 SHORT TERM MEMORY
-# -------------------------------
-def getRecentChatMemory(db: Session, user_id: int, limit: int = 5):
+def cleanMemoryText(text: str, max_len: int = 120):
+    if not text:
+        return ""
+
+    cleaned = (
+        text.replace("SynthMind:", "")
+        .replace("Assistant:", "")
+        .replace("User:", "")
+        .replace("|", " ")
+        .replace("\n", " ")
+        .strip()
+    )
+
+    return cleaned[:max_len]
+
+
+def getRecentChatMemory(db: Session, user_id: int, limit: int = 4):
     chats = (
         db.query(ChatHistory)
         .filter(ChatHistory.user_id == user_id)
@@ -81,17 +85,27 @@ def getRecentChatMemory(db: Session, user_id: int, limit: int = 5):
     chats = list(reversed(chats))
 
     memoryItems = []
+
     for chat in chats:
-        memoryItems.append(f"User: {chat.message}")
-        memoryItems.append(f"SynthMind: {chat.response}")
+        userMsg = cleanMemoryText(chat.message, 90)
+        replySummary = cleanMemoryText(chat.response, 120)
 
-    return " | ".join(memoryItems)
+        if userMsg:
+            memoryItems.append(f"Recent user message: {userMsg}")
+
+        if replySummary:
+            memoryItems.append(f"Recent assistant reply summary: {replySummary}")
+
+    return "\n".join(memoryItems)
 
 
-# -------------------------------
-# 🔹 CONVERSATION STATE
-# -------------------------------
-def buildConversationState(db: Session, user_id: int, message: str, emotion: str, brain: dict):
+def buildConversationState(
+    db: Session,
+    user_id: int,
+    message: str,
+    emotion: str,
+    brain: dict
+):
     recentChats = (
         db.query(ChatHistory)
         .filter(ChatHistory.user_id == user_id)
@@ -105,6 +119,7 @@ def buildConversationState(db: Session, user_id: int, message: str, emotion: str
     msg = message.lower()
 
     topic = "general"
+
     if "exam" in msg:
         topic = "exam"
     elif "interview" in msg:
@@ -125,9 +140,6 @@ def buildConversationState(db: Session, user_id: int, message: str, emotion: str
     }
 
 
-# -------------------------------
-# 🔥 MAIN CONTEXT BUILDER
-# -------------------------------
 def prepareChatContext(db: Session, user_id: int, message: str):
     emotionData = analyzeTextEmotion(message)
     emojiEmotions = detectEmojiEmotions(message)
@@ -143,10 +155,10 @@ def prepareChatContext(db: Session, user_id: int, message: str):
         risk=riskLevel
     )
 
-    # 🔥 PROFILE
     profile = getUserProfile(db, user_id)
 
     profileText = ""
+
     if profile:
         profileText = f"""
 User Mental Profile:
@@ -158,23 +170,20 @@ User Mental Profile:
 - Personality: {profile.personality_summary}
 """
 
-    # 🔥 STATE
     conversationState = buildConversationState(
-        db,
-        user_id,
-        message,
-        emotionData["topEmotion"],
-        brain
+        db=db,
+        user_id=user_id,
+        message=message,
+        emotion=emotionData["topEmotion"],
+        brain=brain
     )
 
-    # 🔥 MEMORY
     shortMemory = getRecentChatMemory(db, user_id)
     longMemory = getRelevantMemories(db, user_id, message)
 
     personalityProfile = getPersonalityProfile(db, user_id)
     personalityText = formatPersonalityProfile(personalityProfile)
 
-    # 🔥 NEW: ADAPTIVE PERSONALITY
     personalityStyle = detectPersonalityStyle(
         profileText=profileText,
         memoryText=personalityText,
@@ -183,18 +192,15 @@ User Mental Profile:
 
     personalityStyleText = formatPersonalityStyle(personalityStyle)
 
-    # 🔥 TIMELINE
     timelineSummary = buildEmotionTimelineSummary(db, user_id)
 
-    # 🔥 ESCALATION
     escalate = shouldEscalate(db, user_id)
 
-    # 🔥 FINAL MEMORY BLOCK
     memory = f"""
-Short-term:
+Recent conversation summary:
 {shortMemory}
 
-Long-term:
+Relevant long-term memory:
 {longMemory}
 
 {profileText}
@@ -233,14 +239,35 @@ Timeline:
         "memory": memory,
         "emotionIntensity": emotionIntensity,
         "escalate": escalate,
-        "personalityStyle": personalityStyle   # ✅ NEW RETURN
+        "personalityStyle": personalityStyle
     }
 
 
-# -------------------------------
-# 🔥 CHAT PROCESS
-# -------------------------------
 def process_chat(db: Session, user_id: int, message: str, mode: str):
+    crisis = analyzeCrisis(db, user_id, message)
+
+    if crisis["risk_level"] in ["HIGH", "CRITICAL"]:
+        chat = ChatHistory(
+            user_id=user_id,
+            message=message,
+            response=crisis["response"],
+            mode="crisis",
+            emotion="crisis",
+            confidence="1.0"
+        )
+
+        db.add(chat)
+        db.commit()
+        db.refresh(chat)
+
+        return {
+            "reply": crisis["response"],
+            "emotion": "crisis",
+            "riskLevel": crisis["risk_level"],
+            "crisisDetected": True,
+            "reason": crisis["reason"]
+        }
+
     prepared = prepareChatContext(db, user_id, message)
 
     reply = generateLlamaReply(
@@ -273,7 +300,8 @@ def process_chat(db: Session, user_id: int, message: str, mode: str):
         "reply": reply,
         "emotion": prepared["emotionData"]["topEmotion"],
         "riskLevel": prepared["riskLevel"],
-        "personalityStyle": prepared["personalityStyle"]  # optional debug
+        "personalityStyle": prepared["personalityStyle"],
+        "crisisDetected": False
     }
 
 

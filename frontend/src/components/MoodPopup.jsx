@@ -1,11 +1,33 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
 
+import {
+  Laugh,
+  Meh,
+  Frown,
+  CloudLightning,
+} from "lucide-react";
+
 const moods = [
-  { label: "Happy", emoji: "😊" },
-  { label: "Normal", emoji: "😐" },
-  { label: "Low", emoji: "😔" },
-  { label: "Overwhelmed", emoji: "😵" },
+  {
+    label: "Happy",
+    icon: <Laugh size={34} strokeWidth={1.8} />,
+  },
+
+  {
+    label: "Normal",
+    icon: <Meh size={34} strokeWidth={1.8} />,
+  },
+
+  {
+    label: "Low",
+    icon: <Frown size={34} strokeWidth={1.8} />,
+  },
+
+  {
+    label: "Overwhelmed",
+    icon: <CloudLightning size={34} strokeWidth={1.8} />,
+  },
 ];
 
 function MoodPopup() {
@@ -17,9 +39,9 @@ function MoodPopup() {
     const today = new Date().toDateString();
     const lastMoodDate = localStorage.getItem("lastMoodDate");
 
-    if (lastMoodDate !== today) {
-      setShow(true);
-    }
+   if (lastMoodDate !== today) {
+    setShow(true);
+   }   
   }, []);
 
   const getUserId = () => {
@@ -40,6 +62,7 @@ function MoodPopup() {
       });
 
       localStorage.setItem("lastMoodDate", new Date().toDateString());
+
       setShow(false);
     } catch (err) {
       console.error("Mood save failed:", err);
@@ -58,8 +81,16 @@ function MoodPopup() {
   return (
     <div className="mood-popup-overlay">
       <div className="mood-popup-card">
-        <h2>How are you feeling today?</h2>
-        <p>A quick check-in helps SynthMind understand your emotional pattern.</p>
+        <div className="mood-popup-header">
+          <p>Daily emotional check-in</p>
+
+          <h2>How are you feeling today?</h2>
+
+          <span>
+            A quick check-in helps SynthMind gently understand your emotional
+            rhythm and support you better.
+          </span>
+        </div>
 
         <div className="mood-popup-options">
           {moods.map((mood) => (
@@ -68,14 +99,20 @@ function MoodPopup() {
               className={selected === mood.label ? "selected" : ""}
               onClick={() => setSelected(mood.label)}
             >
-              <span>{mood.emoji}</span>
+              <div className="mood-popup-icon">
+                {mood.icon}
+              </div>
+
               <small>{mood.label}</small>
             </button>
           ))}
         </div>
 
         <div className="mood-popup-actions">
-          <button className="mood-popup-skip" onClick={skipToday}>
+          <button
+            className="mood-popup-skip"
+            onClick={skipToday}
+          >
             Skip today
           </button>
 

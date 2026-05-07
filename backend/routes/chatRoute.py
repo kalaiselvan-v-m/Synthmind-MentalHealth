@@ -37,7 +37,6 @@ def chatStream(
         for chunk in streamLlamaReply(
             message=data.message,
             emotion=prepared["emotionData"]["topEmotion"],
-            mode=prepared["brain"]["intent"],
             memory=prepared["memory"],
             risk=prepared["riskLevel"],
             brain=prepared["brain"]

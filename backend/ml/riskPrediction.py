@@ -1,6 +1,6 @@
 import os
 import joblib
-import numpy as np
+import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ml", "risk.pkl")
@@ -26,24 +26,26 @@ def predictRiskML(stress_score, support_level, low_mood_count, negative_emotion_
         "high": 2,
         "Low support system": 0,
         "Moderate support system": 1,
-        "Good support system": 2
+        "Good support system": 2,
     }
 
     support_value = support_map.get(support_level, 1)
 
-    X = np.array([[
-        stress_score,
-        support_value,
-        low_mood_count,
-        negative_emotion_count
-    ]])
+    X = pd.DataFrame(
+        [{
+            "stress_score": stress_score,
+            "support_level": support_value,
+            "low_mood_count": low_mood_count,
+            "negative_emotion_count": negative_emotion_count,
+        }]
+    )
 
     prediction = riskModel.predict(X)[0]
 
     label_map = {
         0: "Low",
         1: "Medium",
-        2: "High"
+        2: "High",
     }
 
     return label_map.get(int(prediction), "Low")

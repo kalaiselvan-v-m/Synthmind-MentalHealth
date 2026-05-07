@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import "./App.css";
 
-import Sidebar from "./components/Sidebar";
 import MoodPopup from "./components/MoodPopup";
+import CinematicVideoBackground from "./components/CinematicVideoBackground";
+import AppMenu from "./components/AppMenu";
 
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import Mood from "./pages/Mood";
@@ -20,29 +22,21 @@ import Profile from "./pages/Profile";
 import Habits from "./pages/Habits";
 import HabitTracker from "./pages/HabitTracker";
 
-// ✅ Reminder utilities
 import {
   requestNotificationPermission,
   sendNotification,
 } from "./utils/reminder";
 
-
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
-
   return token ? children : <Navigate to="/login" />;
 }
 
-
 function AppLayout() {
-
-  // 🔔 Request notification permission
   useEffect(() => {
     requestNotificationPermission();
   }, []);
 
-
-  // 🔔 Basic inactivity reminder
   useEffect(() => {
     const interval = setInterval(() => {
       const lastVisit = localStorage.getItem("lastVisit");
@@ -61,8 +55,6 @@ function AppLayout() {
     return () => clearInterval(interval);
   }, []);
 
-
-  // 🔥 Smart reminder from backend
   useEffect(() => {
     const fetchReminder = async () => {
       try {
@@ -86,114 +78,58 @@ function AppLayout() {
       }
     };
 
-    // run once immediately
     fetchReminder();
 
-    // then repeat every 8 hrs
     const timer = setInterval(fetchReminder, 1000 * 60 * 60 * 8);
 
     return () => clearInterval(timer);
   }, []);
 
-
   return (
-    <div className="app">
+    <div className="app no-sidebar-app">
+      <CinematicVideoBackground />
 
-      {/* ✅ Daily Mood Popup */}
       <MoodPopup />
 
-      <Sidebar />
+      <AppMenu />
 
-      <main className="main">
+      <main className="main app-main">
         <Routes>
+          {/* DEFAULT APP PAGE */}
+          <Route path="/" element={<Navigate to="/chat" />} />
 
-          <Route
-            path="/"
-            element={<Navigate to="/dashboard" />}
-          />
+          {/* MAIN PAGES */}
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/mood" element={<Mood />} />
+          <Route path="/habit-tracker" element={<HabitTracker />} />
+          <Route path="/profile" element={<Profile />} />
 
-          <Route
-            path="/dashboard"
-            element={<Dashboard />}
-          />
-
-          <Route
-            path="/chat"
-            element={<Chat />}
-          />
-
-          <Route
-            path="/mood"
-            element={<Mood />}
-          />
-
-          <Route
-            path="/insights"
-            element={<Insights />}
-          />
-
-          <Route
-            path="/recommendations"
-            element={<Recommendations />}
-          />
-
-          <Route
-            path="/recovery-plan"
-            element={<RecoveryPlan />}
-          />
-
-          <Route
-            path="/onboarding"
-            element={<Onboarding />}
-          />
-
-          <Route
-            path="/weekly-report"
-            element={<WeeklyReport />}
-          />
-
-          <Route
-            path="/journal"
-            element={<Journal />}
-          />
-
-          <Route
-            path="/profile"
-            element={<Profile />}
-          />
-
-          <Route
-            path="/habits"
-            element={<Habits />}
-          />
-
-          <Route
-            path="/habit-tracker"
-            element={<HabitTracker />}
-          />
-
+          {/* SECONDARY PAGES */}
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="/recovery-plan" element={<RecoveryPlan />} />
+          <Route path="/weekly-report" element={<WeeklyReport />} />
+          <Route path="/journal" element={<Journal />} />
+          <Route path="/habits" element={<Habits />} />
+          <Route path="/onboarding" element={<Onboarding />} />
         </Routes>
       </main>
     </div>
   );
 }
 
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        {/* PUBLIC */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-
+        {/* PROTECTED */}
         <Route
           path="/*"
           element={

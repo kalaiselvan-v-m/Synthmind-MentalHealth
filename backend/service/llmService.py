@@ -1,7 +1,7 @@
 import json
 import requests
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
+OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3.2:1b"
 
 
@@ -87,79 +87,12 @@ User condition:
 Context:
 {memory}
 
-------------------------------------
-🧠 Adaptive Personality Rules
-------------------------------------
-The context may contain an "Adaptive Personality" section.
-
-Follow it silently:
-- Friendly Buddy → warm and casual only when the user is casual.
-- Calm Supporter → soft, short, emotionally safe.
-- Motivator → encouraging, but never pressure the user during serious emotions.
-- Direct Coach → clear, practical, short.
-- Clear Guide → structured and simple when user asks for explanation/guidance.
-- Balanced Friend → natural, kind, human-like.
-
-Important:
-- Emotional safety always overrides personality style.
-- Do not mention the personality style name.
-- Do not say you are changing style.
-- Do not repeat profile or memory directly.
-
-------------------------------------
-🧠 Emotional Intelligence Rules
-------------------------------------
-1. If emotion is negative + HIGH intensity:
-   → Very short reply
-   → Calm, grounding tone
-   → NO advice immediately
-   → Ask one small question only if needed
-
-2. If negative emotion + MEDIUM intensity:
-   → Gentle support
-   → One small suggestion allowed
-
-3. If negative emotion + LOW intensity:
-   → Light emotional acknowledgment
-   → Do not over-comfort
-
-4. If escalation = TRUE:
-   → Be extra supportive
-   → Gently suggest talking to someone trusted
-   → Do not sound alarming
-   → Do not diagnose
-
-5. If the user asks for guidance:
-   → Give clear, simple steps
-   → Avoid long paragraphs
-   → No slang
-
-6. If the user is casual:
-   → Match casually
-   → Keep it short
-   → Light slang allowed only if the user used it first
-
-------------------------------------
-🚫 Strict Banned Phrases
-------------------------------------
-Do not start with or use:
-- "It sounds like"
-- "I understand"
-- "Your feelings are valid"
-- "Based on your emotion"
-- "As an AI"
-- "I'm SynthMind"
-
-------------------------------------
-🎯 Output Rules
-------------------------------------
-- Reply only to the latest user message.
-- Ask maximum ONE question.
-- No long lectures.
-- No therapist tone.
-- No diagnosis.
-- No robotic explanation.
-- Keep it human, warm, and context-aware.
+Rules:
+- Be natural
+- Keep replies human
+- No robotic tone
+- No therapist language
+- Short replies preferred
 """
 
 
@@ -199,21 +132,28 @@ def generateLlamaReply(
         escalate=escalate
     )
 
+    finalPrompt = f"""
+{systemPrompt}
+
+User: {message}
+
+SynthMind:
+"""
+
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {"role": "system", "content": systemPrompt},
-            {"role": "user", "content": message}
-        ],
+        "prompt": finalPrompt,
         "stream": False
     }
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=90)
-        data = response.json()
+        response = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=90
+        )
 
-        if "message" in data and "content" in data["message"]:
-            return cleanReply(data["message"]["content"])
+        data = response.json()
 
         if "response" in data:
             return cleanReply(data["response"])
@@ -265,12 +205,17 @@ def streamLlamaReply(
         escalate=escalate
     )
 
+    finalPrompt = f"""
+{systemPrompt}
+
+User: {message}
+
+SynthMind:
+"""
+
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {"role": "system", "content": systemPrompt},
-            {"role": "user", "content": message}
-        ],
+        "prompt": finalPrompt,
         "stream": True
     }
 
@@ -286,8 +231,8 @@ def streamLlamaReply(
                 if line:
                     data = json.loads(line.decode("utf-8"))
 
-                    if "message" in data and "content" in data["message"]:
-                        yield data["message"]["content"]
+                    if "response" in data:
+                        yield data["response"]
 
                     if data.get("done"):
                         break
@@ -296,6 +241,10 @@ def streamLlamaReply(
         print("STREAM ERROR:", str(e))
         yield "connection issue. try again?"
 
+
+# -------------------------------
+# 🔥 JOURNAL INSIGHT
+# -------------------------------
 def generateJournalInsight(
     content: str,
     emotion: str,
@@ -307,73 +256,39 @@ You are SynthMind's journal reflection engine.
 Journal:
 {content}
 
-Detected emotion (STRICT):
+Emotion:
 {emotion}
 
 Context:
 {memory}
 
-------------------------------------
-RULES (VERY IMPORTANT)
-------------------------------------
-
-- You MUST use the detected emotion correctly.
-- Do NOT replace it with a different emotion.
-- Do NOT generalize it (no "fear" if emotion is "nervousness").
-- Refer to it naturally (e.g., "exam pressure", "nervousness", "tension").
-
-------------------------------------
-STYLE RULES
-------------------------------------
-
-- Do NOT ask questions
-- Do NOT chat
-- Do NOT say "I understand"
-- Do NOT say "It sounds like"
-- Keep it 2–4 lines max
-- Calm, reflective, grounded
+Rules:
+- Keep it short
+- Calm
+- Reflective
 - No diagnosis
-
-------------------------------------
-OUTPUT STYLE
-------------------------------------
-
-Good:
-"You seem to be carrying exam pressure today. This feels like nervousness tied to something specific. It looks temporary, not permanent. A small structured step may help you feel more in control."
-
-Return only the reflection.
 """
 
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
+        "prompt": prompt,
         "stream": False
     }
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=90)
+        response = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=90
+        )
+
         data = response.json()
 
-        if "message" in data and "content" in data["message"]:
-            reply = cleanReply(data["message"]["content"])
-        elif "response" in data:
-            reply = cleanReply(data["response"])
-        else:
-            reply = ""
+        if "response" in data:
+            return cleanReply(data["response"])
 
-        # -------------------------------
-        # 🔥 POST FIX (IMPORTANT)
-        # -------------------------------
-        reply_lower = reply.lower()
-
-        # Prevent wrong emotion substitution
-        if emotion == "nervousness" and "fear" in reply_lower:
-            reply = reply.replace("fear", "nervousness")
-
-        return reply or "This looks like a temporary emotional moment. A small calming step may help you feel steadier."
+        return "This looks like a temporary emotional moment."
 
     except Exception as e:
-        print("JOURNAL INSIGHT ERROR:", str(e))
-        return "This looks like a temporary emotional moment. A small calming step may help you feel steadier."
+        print("JOURNAL ERROR:", str(e))
+        return "This looks like a temporary emotional moment."

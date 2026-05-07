@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import API from "../api/api";
 import { Line } from "react-chartjs-2";
 import {
@@ -8,8 +9,16 @@ import {
   LinearScale,
   PointElement,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
+import {
+  Activity,
+  Brain,
+  HeartPulse,
+  ShieldAlert,
+  TrendingUp,
+  Waves,
+} from "lucide-react";
 
 ChartJS.register(
   LineElement,
@@ -19,6 +28,23 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 28,
+    filter: "blur(10px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.75,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
 function Insights() {
   const [data, setData] = useState([]);
@@ -43,7 +69,7 @@ function Insights() {
     Normal: 3,
     Low: 2,
     Overwhelmed: 1,
-    Unknown: 0
+    Unknown: 0,
   };
 
   const chartData = {
@@ -51,96 +77,192 @@ function Insights() {
     datasets: [
       {
         label: "Mood Level",
-        data: data.map((d) => moodMap[d.mood]),
+        data: data.map((d) => moodMap[d.mood] ?? 0),
         borderWidth: 3,
-        tension: 0.4,
-        pointRadius: 5,
-        pointHoverRadius: 7
-      }
-    ]
+        tension: 0.42,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        borderColor: "rgba(255, 214, 165, 0.95)",
+        pointBackgroundColor: "#fff7ed",
+        pointBorderColor: "rgba(255, 196, 122, 0.9)",
+        pointBorderWidth: 2,
+        fill: false,
+      },
+    ],
   };
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         labels: {
-          color: "#cbd5e1"
-        }
-      }
+          color: "rgba(255, 237, 213, 0.68)",
+          font: {
+            family: "Geist",
+            size: 12,
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(5, 5, 5, 0.88)",
+        titleColor: "#fff7ed",
+        bodyColor: "rgba(255, 237, 213, 0.72)",
+        borderColor: "rgba(255, 214, 165, 0.16)",
+        borderWidth: 1,
+        padding: 12,
+      },
     },
     scales: {
       x: {
-        ticks: { color: "#94a3b8" },
-        grid: { color: "rgba(255,255,255,0.08)" }
+        ticks: {
+          color: "rgba(255, 237, 213, 0.48)",
+          font: {
+            family: "Geist",
+            size: 11,
+          },
+        },
+        grid: {
+          color: "rgba(255,255,255,0.055)",
+        },
       },
       y: {
         min: 0,
         max: 4,
         ticks: {
-          color: "#94a3b8",
-          stepSize: 1
+          color: "rgba(255, 237, 213, 0.48)",
+          stepSize: 1,
+          callback: (value) => {
+            const labels = {
+              1: "Overwhelmed",
+              2: "Low",
+              3: "Normal",
+              4: "Happy",
+            };
+
+            return labels[value] || "";
+          },
         },
-        grid: { color: "rgba(255,255,255,0.08)" }
-      }
-    }
+        grid: {
+          color: "rgba(255,255,255,0.055)",
+        },
+      },
+    },
   };
 
   return (
-    <div className="insights-page">
-      <div className="insights-header">
-        <h1>Emotional Insights</h1>
-        <p>Track your mood patterns, emotional signals, and wellness direction over time.</p>
-      </div>
+    <div className="insights-page synth-insights-page">
+      <motion.section
+        className="synth-insights-hero"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <p>Emotional intelligence</p>
 
-      <div className="insights-summary">
-        <div className="insights-summary-card">
-          <span>Overall Trend</span>
+        <h1>
+          Patterns, not
+          <span> pressure.</span>
+        </h1>
+
+        <small>
+          SynthMind brings together your mood signals, emotional trends, and
+          reflection patterns so you can understand yourself with more clarity.
+        </small>
+      </motion.section>
+
+      <motion.section
+        className="synth-insights-grid"
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="synth-insight-stat">
+          <TrendingUp size={20} />
+          <span>Overall trend</span>
           <strong>{trend.overall_trend || "Unknown"}</strong>
         </div>
 
-        <div className="insights-summary-card">
-          <span>Mood Trend</span>
+        <div className="synth-insight-stat">
+          <Waves size={20} />
+          <span>Mood trend</span>
           <strong>{trend.mood_trend || "Unknown"}</strong>
         </div>
 
-        <div className="insights-summary-card">
-          <span>Dominant Emotion</span>
+        <div className="synth-insight-stat">
+          <Brain size={20} />
+          <span>Dominant emotion</span>
           <strong>{trend.dominant_emotion || "Unknown"}</strong>
         </div>
-      </div>
+      </motion.section>
 
-      <div className="insights-chart-card">
-        <div className="chart-card-header">
+      <motion.section
+        className="synth-chart-card"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="synth-chart-header">
           <div>
-            <h2>Mood Timeline</h2>
-            <p>Happy = 4, Normal = 3, Low = 2, Overwhelmed = 1</p>
+            <p>Mood timeline</p>
+            <h2>Your emotional wave</h2>
+            <span>Happy = 4 · Normal = 3 · Low = 2 · Overwhelmed = 1</span>
           </div>
+
+          <Activity size={22} />
         </div>
 
-        {data.length > 0 ? (
-          <Line data={chartData} options={chartOptions} />
-        ) : (
-          <p className="empty-insight">No timeline data available yet.</p>
-        )}
-      </div>
+        <div className="synth-chart-area">
+          {data.length > 0 ? (
+            <Line data={chartData} options={chartOptions} />
+          ) : (
+            <div className="synth-empty-chart">
+              <Activity size={24} />
+              <h3>No timeline data yet</h3>
+              <p>
+                Start using mood check-ins and journal reflections to generate
+                your emotional timeline.
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.section>
 
-      <div className="insights-detail-grid">
-        <div className="insights-detail-card">
-          <h3>Risk Trend</h3>
-          <p>{trend.risk_trend || "Unknown"}</p>
+      <motion.section
+        className="synth-detail-grid"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="synth-detail-card">
+          <ShieldAlert size={20} />
+          <span>Risk trend</span>
+          <strong>{trend.risk_trend || "Unknown"}</strong>
         </div>
 
-        <div className="insights-detail-card">
-          <h3>Negative Emotion Count</h3>
-          <p>{trend.negative_emotion_count ?? 0}</p>
+        <div className="synth-detail-card">
+          <HeartPulse size={20} />
+          <span>Negative emotion count</span>
+          <strong>{trend.negative_emotion_count ?? 0}</strong>
         </div>
-      </div>
+      </motion.section>
 
-      <div className="insight-message-card">
-        <h3>AI Insight</h3>
-        <p>{trend.insight || "Start using chat and mood check-ins to generate insights."}</p>
-      </div>
+      <motion.section
+        className="synth-ai-insight-message"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <p>AI observation</p>
+        <h2>What SynthMind noticed</h2>
+        <span>
+          {trend.insight ||
+            "Start using chat, journal, and mood check-ins to generate deeper emotional insights."}
+        </span>
+      </motion.section>
     </div>
   );
 }
