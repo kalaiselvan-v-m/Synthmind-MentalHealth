@@ -29,7 +29,7 @@ import {
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function AppLayout() {
@@ -59,7 +59,6 @@ function AppLayout() {
     const fetchReminder = async () => {
       try {
         const token = localStorage.getItem("token");
-
         if (!token) return;
 
         const res = await fetch("http://127.0.0.1:8000/reminder", {
@@ -95,8 +94,8 @@ function AppLayout() {
 
       <main className="main app-main">
         <Routes>
-          {/* DEFAULT APP PAGE */}
-          <Route path="/" element={<Navigate to="/chat" />} />
+          {/* DEFAULT AFTER LOGIN */}
+          <Route path="/" element={<Navigate to="/chat" replace />} />
 
           {/* MAIN PAGES */}
           <Route path="/chat" element={<Chat />} />
@@ -113,6 +112,9 @@ function AppLayout() {
           <Route path="/journal" element={<Journal />} />
           <Route path="/habits" element={<Habits />} />
           <Route path="/onboarding" element={<Onboarding />} />
+
+          {/* FALLBACK INSIDE APP */}
+          <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
       </main>
     </div>
@@ -123,13 +125,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* PUBLIC */}
+        {/* PUBLIC LANDING FIRST */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTECTED */}
+        {/* PROTECTED APP */}
         <Route
           path="/*"
           element={
@@ -138,7 +139,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );

@@ -61,6 +61,9 @@ function Profile() {
       },
     });
 
+    localStorage.removeItem("synthChatMessages");
+    window.dispatchEvent(new Event("chatHistoryCleared"));
+
     fetchProfile();
   };
 

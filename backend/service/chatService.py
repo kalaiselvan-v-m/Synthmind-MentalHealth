@@ -1,3 +1,5 @@
+from email import message
+
 from sqlalchemy.orm import Session
 
 from backend.models.chat import ChatHistory
@@ -10,6 +12,8 @@ from backend.service.emojiService import detectEmojiEmotions
 from backend.service.conversationBrainService import analyzeConversation
 from backend.service.emotionTimelineService import buildEmotionTimelineSummary
 from backend.service.crisisService import analyzeCrisis
+from backend.service.emotionalFlowService import buildEmotionalFlow
+from backend.service.communicationStyleService import detectCommunicationStyle
 from backend.service.memoryService import (
     updateLongTermMemory,
     getRelevantMemories,
@@ -141,99 +145,201 @@ def buildConversationState(
 
 
 def prepareChatContext(db: Session, user_id: int, message: str):
+    # -----------------------------
+    # FAST EMOTION ANALYSIS
+    # -----------------------------
     emotionData = analyzeTextEmotion(message)
-    emojiEmotions = detectEmojiEmotions(message)
 
-    emotionIntensity = getEmotionIntensity(emotionData["confidence"])
+    emotion = emotionData["topEmotion"]
+    confidence = emotionData["confidence"]
 
+    emotionIntensity = getEmotionIntensity(confidence)
+
+    # -----------------------------
+    # LIGHTWEIGHT RISK
+    # -----------------------------
     riskData = calculateRiskScore(db, user_id)
     riskLevel = riskData["final_risk"]
 
+    # -----------------------------
+    # CONVERSATION BRAIN
+    # -----------------------------
     brain = analyzeConversation(
         message=message,
-        emotion=emotionData["topEmotion"],
+        emotion=emotion,
         risk=riskLevel
     )
 
+    # -----------------------------
+    # USER PROFILE
+    # -----------------------------
     profile = getUserProfile(db, user_id)
 
     profileText = ""
 
     if profile:
         profileText = f"""
-User Mental Profile:
-- Stress: {profile.stress_score}
-- Wellness: {profile.wellness_score}
-- Emotion: {profile.emotional_state}
-- Support: {profile.support_level}
-- Risk: {profile.risk_level}
-- Personality: {profile.personality_summary}
+Stress: {profile.stress_score}
+Wellness: {profile.wellness_score}
+Emotion: {profile.emotional_state}
+Support: {profile.support_level}
 """
 
+    # -----------------------------
+    # SHORT MEMORY ONLY
+    # -----------------------------
+    shortMemory = getRecentChatMemory(
+        db,
+        user_id,
+        limit=2
+    )
+
+    # -----------------------------
+    # REDUCED LONG MEMORY
+    # -----------------------------
+    longMemory = getRelevantMemories(
+        db,
+        user_id,
+        message
+    )
+
+    if longMemory:
+        longMemory = longMemory[:350]
+
+    # -----------------------------
+    # LIGHT PERSONALITY SYSTEM
+    # -----------------------------
+    personalityProfile = getPersonalityProfile(
+        db,
+        user_id
+    )
+
+    personalityText = ""
+
+    if personalityProfile:
+        personalityText = formatPersonalityProfile(
+            personalityProfile
+        )[:250]
+
+    # -----------------------------
+    # FAST PERSONALITY STYLE
+    # -----------------------------
+    personalityStyle = {
+        "style": "Emotionally Supportive Friend",
+        "tone": "natural, emotionally aware, conversational"
+    }
+
+    personalityStyleText = """
+Emotionally supportive, conversational, calm and natural.
+Respond according to the user's emotional tone.
+Avoid robotic or overly formal language.
+"""
+
+    # -----------------------------
+    # SHORT TIMELINE
+    # -----------------------------
+    try:
+        timelineSummary = buildEmotionTimelineSummary(
+            db,
+            user_id
+        )
+
+        timelineSummary = timelineSummary[:250]
+
+    except:
+        timelineSummary = ""
+
+    # -----------------------------
+    # ESCALATION CHECK
+    # -----------------------------
+    escalate = shouldEscalate(
+        db,
+        user_id
+    )
+
+    # -----------------------------
+    # CONVERSATION STATE
+    # -----------------------------
     conversationState = buildConversationState(
         db=db,
         user_id=user_id,
         message=message,
-        emotion=emotionData["topEmotion"],
+        emotion=emotion,
         brain=brain
     )
+    communicationStyle = detectCommunicationStyle(message)
 
-    shortMemory = getRecentChatMemory(db, user_id)
-    longMemory = getRelevantMemories(db, user_id, message)
+    recentEmotions = conversationState.get("recentEmotions", [])
 
-    personalityProfile = getPersonalityProfile(db, user_id)
-    personalityText = formatPersonalityProfile(personalityProfile)
+    emotionalFlow = buildEmotionalFlow(
+            recentEmotions=recentEmotions,
+            message=message
+        )
 
-    personalityStyle = detectPersonalityStyle(
-        profileText=profileText,
-        memoryText=personalityText,
-        brain=brain
-    )
-
-    personalityStyleText = formatPersonalityStyle(personalityStyle)
-
-    timelineSummary = buildEmotionTimelineSummary(db, user_id)
-
-    escalate = shouldEscalate(db, user_id)
-
+    # -----------------------------
+    # FINAL MEMORY CONTEXT
+    # -----------------------------
     memory = f"""
-Recent conversation summary:
+USER PROFILE:
+{profileText}
+
+RECENT CONVERSATION:
 {shortMemory}
 
-Relevant long-term memory:
+IMPORTANT MEMORY:
 {longMemory}
 
-{profileText}
-
-Memory Personality:
+PERSONALITY:
 {personalityText}
 
-Adaptive Personality:
+EMOTIONAL FLOW:
+{emotionalFlow}
+
+COMMUNICATION STYLE:
+{communicationStyle}
+
+COMMUNICATION STYLE:
 {personalityStyleText}
 
-Timeline:
+EMOTIONAL TIMELINE:
 {timelineSummary}
 
-Conversation State:
+CURRENT STATE:
 {conversationState}
 
-Escalation: {escalate}
+IMPORTANT RULES:
+- Speak naturally
+- Match the user's vibe
+- Be emotionally intelligent
+- Don't hallucinate facts
+- Don't invent memories
+- Keep responses human
+- Avoid repetitive therapy language
 """
 
+    # -----------------------------
+    # LOW MEMORY MODE
+    # -----------------------------
     if not brain["useMemory"]:
         memory = f"""
+USER PROFILE:
 {profileText}
 
-Adaptive Personality:
+COMMUNICATION STYLE:
 {personalityStyleText}
 
-Timeline:
-{timelineSummary}
+CURRENT STATE:
+{conversationState}
+
+RULES:
+- Be natural
+- Be emotionally aware
+- Keep responses conversational
 """
 
     return {
         "emotionData": emotionData,
-        "emojiEmotions": emojiEmotions,
+        "emojiEmotions": [],
         "riskLevel": riskLevel,
         "brain": brain,
         "memory": memory,
@@ -241,7 +347,6 @@ Timeline:
         "escalate": escalate,
         "personalityStyle": personalityStyle
     }
-
 
 def process_chat(db: Session, user_id: int, message: str, mode: str):
     crisis = analyzeCrisis(db, user_id, message)

@@ -10,19 +10,45 @@ from backend.service.weeklyReportService import generateWeeklyReport
 
 
 NEGATIVE_EMOTIONS = [
-    "fear", "sadness", "grief", "nervousness",
-    "remorse", "disappointment", "anger"
+    "fear",
+    "sadness",
+    "grief",
+    "nervousness",
+    "remorse",
+    "disappointment",
+    "anger"
 ]
 
 POSITIVE_EMOTIONS = [
-    "joy", "relief", "admiration", "gratitude",
-    "optimism", "calm", "excitement", "curiosity", "neutral"
+    "joy",
+    "relief",
+    "admiration",
+    "gratitude",
+    "optimism",
+    "calm",
+    "excitement",
+    "curiosity",
+    "neutral"
 ]
 
-LOW_MOODS = ["Low", "Overwhelmed", "low", "overwhelmed"]
-GOOD_MOODS = ["Happy", "Normal", "happy", "normal"]
+LOW_MOODS = [
+    "Low",
+    "Overwhelmed",
+    "low",
+    "overwhelmed"
+]
+
+GOOD_MOODS = [
+    "Happy",
+    "Normal",
+    "happy",
+    "normal"
+]
 
 
+# ------------------------------------------------
+# 🔹 RECENT DATA FETCHERS
+# ------------------------------------------------
 def getRecentChats(db: Session, user_id: int, days: int = 14):
     since = datetime.utcnow() - timedelta(days=days)
 
@@ -59,7 +85,11 @@ def getRecentMoods(db: Session, user_id: int, days: int = 14):
     )
 
 
-def getRecentHabitCompletions(db: Session, user_id: int, days: int = 14):
+def getRecentHabitCompletions(
+    db: Session,
+    user_id: int,
+    days: int = 14
+):
     since = datetime.utcnow().date() - timedelta(days=days)
 
     return (
@@ -71,6 +101,9 @@ def getRecentHabitCompletions(db: Session, user_id: int, days: int = 14):
     )
 
 
+# ------------------------------------------------
+# 🔹 EMOTION HELPERS
+# ------------------------------------------------
 def isNegativeEmotion(emotion: str):
     return emotion in NEGATIVE_EMOTIONS
 
@@ -79,6 +112,9 @@ def isPositiveEmotion(emotion: str):
     return emotion in POSITIVE_EMOTIONS
 
 
+# ------------------------------------------------
+# 🔹 DAILY EMOTIONAL MAP
+# ------------------------------------------------
 def buildDailyMap(chats, journals, moods, habits):
     daily = defaultdict(lambda: {
         "chatEmotions": [],
@@ -90,6 +126,7 @@ def buildDailyMap(chats, journals, moods, habits):
         "positiveCount": 0
     })
 
+    # chats
     for chat in chats:
         if not chat.created_at:
             continue
@@ -101,9 +138,11 @@ def buildDailyMap(chats, journals, moods, habits):
 
         if isNegativeEmotion(emotion):
             daily[day]["negativeCount"] += 1
+
         elif isPositiveEmotion(emotion):
             daily[day]["positiveCount"] += 1
 
+    # journals
     for journal in journals:
         if not journal.created_at:
             continue
@@ -116,21 +155,26 @@ def buildDailyMap(chats, journals, moods, habits):
 
         if isNegativeEmotion(emotion):
             daily[day]["negativeCount"] += 1
+
         elif isPositiveEmotion(emotion):
             daily[day]["positiveCount"] += 1
 
+    # moods
     for mood in moods:
         if not mood.created_at:
             continue
 
         day = mood.created_at.strftime("%Y-%m-%d")
+
         daily[day]["moods"].append(mood.mood)
 
         if mood.mood in LOW_MOODS:
             daily[day]["negativeCount"] += 1
+
         elif mood.mood in GOOD_MOODS:
             daily[day]["positiveCount"] += 1
 
+    # habits
     for habit in habits:
         day = habit.completed_date.strftime("%Y-%m-%d")
         daily[day]["habits"] += 1
@@ -138,6 +182,9 @@ def buildDailyMap(chats, journals, moods, habits):
     return daily
 
 
+# ------------------------------------------------
+# 🔹 JOURNAL EFFECT
+# ------------------------------------------------
 def detectJournalEffect(daily):
     journalDays = []
     nonJournalDays = []
@@ -147,6 +194,7 @@ def detectJournalEffect(daily):
 
         if values["journalCount"] > 0:
             journalDays.append(score)
+
         else:
             nonJournalDays.append(score)
 
@@ -157,14 +205,22 @@ def detectJournalEffect(daily):
     avgNonJournal = sum(nonJournalDays) / len(nonJournalDays)
 
     if avgJournal > avgNonJournal:
-        return "You seem a little steadier on days when you journal."
+        return (
+            "You seem a little steadier on days when you journal."
+        )
 
     if avgJournal < avgNonJournal:
-        return "Journaling days seem to happen around heavier emotions, which may mean you use journaling when things feel difficult."
+        return (
+            "Journaling days seem to happen around heavier emotions, "
+            "which may mean you use journaling when things feel difficult."
+        )
 
     return None
 
 
+# ------------------------------------------------
+# 🔹 HABIT EFFECT
+# ------------------------------------------------
 def detectHabitEffect(daily):
     habitDays = []
     nonHabitDays = []
@@ -174,6 +230,7 @@ def detectHabitEffect(daily):
 
         if values["habits"] > 0:
             habitDays.append(score)
+
         else:
             nonHabitDays.append(score)
 
@@ -184,14 +241,23 @@ def detectHabitEffect(daily):
     avgNonHabit = sum(nonHabitDays) / len(nonHabitDays)
 
     if avgHabit > avgNonHabit:
-        return "Your emotional pattern looks better on days when you complete a habit."
+        return (
+            "Your emotional pattern looks better on days "
+            "when you complete a habit."
+        )
 
     if avgHabit < avgNonHabit:
-        return "You tend to complete habits on tougher days, which shows you are using support tools when needed."
+        return (
+            "You tend to complete habits on tougher days, "
+            "which shows you are using support tools when needed."
+        )
 
     return None
 
 
+# ------------------------------------------------
+# 🔹 RECURRING THEMES
+# ------------------------------------------------
 def detectRecurringTheme(chats, journals):
     text = " ".join(
         [chat.message.lower() for chat in chats if chat.message] +
@@ -200,24 +266,144 @@ def detectRecurringTheme(chats, journals):
 
     themes = []
 
-    if any(word in text for word in ["exam", "test", "assignment", "deadline"]):
-        themes.append("Academic pressure appears to be one recurring emotional theme.")
+    if any(word in text for word in [
+        "exam",
+        "test",
+        "assignment",
+        "deadline"
+    ]):
+        themes.append(
+            "Academic pressure appears to be one recurring emotional theme."
+        )
 
-    if any(word in text for word in ["interview", "placement", "job", "career"]):
-        themes.append("Career or interview pressure appears to affect your emotional state.")
+    if any(word in text for word in [
+        "interview",
+        "placement",
+        "job",
+        "career"
+    ]):
+        themes.append(
+            "Career or interview pressure appears to affect your emotional state."
+        )
 
-    if any(word in text for word in ["sleep", "tired", "insomnia", "awake"]):
-        themes.append("Sleep or tiredness may be connected to your emotional changes.")
+    if any(word in text for word in [
+        "sleep",
+        "tired",
+        "insomnia",
+        "awake"
+    ]):
+        themes.append(
+            "Sleep or tiredness may be connected to your emotional changes."
+        )
 
-    if any(word in text for word in ["alone", "lonely", "isolated"]):
-        themes.append("Feeling alone appears as a recurring emotional signal.")
+    if any(word in text for word in [
+        "alone",
+        "lonely",
+        "isolated"
+    ]):
+        themes.append(
+            "Feeling alone appears as a recurring emotional signal."
+        )
 
-    if any(word in text for word in ["overthinking", "anxious", "anxiety"]):
-        themes.append("Overthinking or anxiety appears repeatedly in your recent check-ins.")
+    if any(word in text for word in [
+        "overthinking",
+        "anxious",
+        "anxiety"
+    ]):
+        themes.append(
+            "Overthinking or anxiety appears repeatedly in your recent check-ins."
+        )
 
-    return themes[:2]
+    return themes[:3]
 
 
+# ------------------------------------------------
+# 🔹 EMOTIONAL PATTERNS
+# ------------------------------------------------
+def detectEmotionalPatterns(chats):
+    insights = []
+
+    lonelyKeywords = [
+        "alone",
+        "lonely",
+        "nobody cares",
+        "invisible",
+        "worthless",
+        "not important",
+        "dont feel worthy",
+        "don't feel worthy",
+    ]
+
+    exhaustionKeywords = [
+        "tired",
+        "drained",
+        "exhausted",
+        "burned out",
+        "burnt out",
+        "overwhelmed",
+        "mentally tired",
+    ]
+
+    selfCriticalKeywords = [
+        "failed",
+        "failure",
+        "useless",
+        "hate myself",
+        "not good enough",
+        "losing myself",
+        "not myself",
+    ]
+
+    lonelyCount = 0
+    exhaustionCount = 0
+    selfCriticalCount = 0
+
+    for chat in chats:
+        msg = (chat.message or "").lower()
+
+        if any(word in msg for word in lonelyKeywords):
+            lonelyCount += 1
+
+        if any(word in msg for word in exhaustionKeywords):
+            exhaustionCount += 1
+
+        if any(word in msg for word in selfCriticalKeywords):
+            selfCriticalCount += 1
+
+    if lonelyCount >= 3:
+        insights.append({
+            "type": "loneliness_pattern",
+            "title": "Emotional Disconnection",
+            "message": (
+                "You’ve mentioned feeling emotionally disconnected "
+                "several times recently."
+            )
+        })
+
+    if exhaustionCount >= 3:
+        insights.append({
+            "type": "mental_exhaustion",
+            "title": "Mental Exhaustion",
+            "message": (
+                "You’ve seemed mentally exhausted lately."
+            )
+        })
+
+    if selfCriticalCount >= 2:
+        insights.append({
+            "type": "self_critical_pattern",
+            "title": "Self-Critical Thinking",
+            "message": (
+                "You’ve been speaking more critically about yourself recently."
+            )
+        })
+
+    return insights
+
+
+# ------------------------------------------------
+# 🔹 EMOTION SHIFT
+# ------------------------------------------------
 def detectEmotionShift(chats, journals):
     items = []
 
@@ -235,24 +421,116 @@ def detectEmotionShift(chats, journals):
         return None
 
     midpoint = len(items) // 2
-    firstHalf = [emotion for _, emotion in items[:midpoint]]
-    secondHalf = [emotion for _, emotion in items[midpoint:]]
 
-    firstNeg = sum(1 for e in firstHalf if isNegativeEmotion(e))
-    secondNeg = sum(1 for e in secondHalf if isNegativeEmotion(e))
+    firstHalf = [
+        emotion for _, emotion in items[:midpoint]
+    ]
 
-    firstPos = sum(1 for e in firstHalf if isPositiveEmotion(e))
-    secondPos = sum(1 for e in secondHalf if isPositiveEmotion(e))
+    secondHalf = [
+        emotion for _, emotion in items[midpoint:]
+    ]
+
+    firstNeg = sum(
+        1 for e in firstHalf if isNegativeEmotion(e)
+    )
+
+    secondNeg = sum(
+        1 for e in secondHalf if isNegativeEmotion(e)
+    )
+
+    firstPos = sum(
+        1 for e in firstHalf if isPositiveEmotion(e)
+    )
+
+    secondPos = sum(
+        1 for e in secondHalf if isPositiveEmotion(e)
+    )
 
     if secondNeg < firstNeg and secondPos >= firstPos:
-        return "Your recent emotional pattern looks slightly more stable than earlier."
+        return (
+            "Your recent emotional pattern looks slightly "
+            "more stable than earlier."
+        )
 
     if secondNeg > firstNeg:
-        return "Your recent entries show a slight increase in heavier emotions."
+        return (
+            "Your recent entries show a slight increase "
+            "in heavier emotions."
+        )
 
     return None
 
+# ------------------------------------------------
+# 🔹 EMOTION JOURNEY
+# ------------------------------------------------
+def buildEmotionJourney(chats):
+    timeline = []
 
+    grouped = defaultdict(list)
+
+    for chat in chats:
+        if not chat.created_at:
+            continue
+
+        day = chat.created_at.strftime("%b %d")
+
+        grouped[day].append(chat)
+
+    for day, items in grouped.items():
+
+        emotions = [
+            c.emotion for c in items if c.emotion
+        ]
+
+        dominant = "neutral"
+
+        if emotions:
+            dominant = Counter(emotions).most_common(1)[0][0]
+
+        messageText = " ".join(
+            [
+                (c.message or "").lower()
+                for c in items
+            ]
+        )
+
+        summary = "Emotionally balanced day."
+
+        if "lonely" in messageText or "alone" in messageText:
+            summary = (
+                "Feelings of emotional disconnection appeared."
+            )
+
+        elif (
+            "tired" in messageText
+            or "exhausted" in messageText
+            or "drained" in messageText
+        ):
+            summary = (
+                "Mental exhaustion appeared throughout conversations."
+            )
+
+        elif dominant in ["joy", "gratitude", "relief"]:
+            summary = (
+                "Conversations felt emotionally lighter."
+            )
+
+        elif dominant in ["sadness", "fear", "grief"]:
+            summary = (
+                "Emotionally heavier conversations appeared."
+            )
+
+        timeline.append({
+            "date": day,
+            "dominantEmotion": dominant,
+            "summary": summary
+        })
+
+    return timeline[-7:]
+
+# ------------------------------------------------
+# 🔹 BUILD INSIGHTS
+# ------------------------------------------------
 def buildEmotionalInsights(db: Session, user_id: int):
     report = generateWeeklyReport(db, user_id)
 
@@ -261,11 +539,22 @@ def buildEmotionalInsights(db: Session, user_id: int):
     moods = getRecentMoods(db, user_id)
     habits = getRecentHabitCompletions(db, user_id)
 
-    daily = buildDailyMap(chats, journals, moods, habits)
+    daily = buildDailyMap(
+        chats,
+        journals,
+        moods,
+        habits
+    )
 
     insights = []
 
+    # emotional patterns
+    patternInsights = detectEmotionalPatterns(chats)
+    insights.extend(patternInsights)
+
+    # emotional shift
     shiftInsight = detectEmotionShift(chats, journals)
+
     if shiftInsight:
         insights.append({
             "type": "emotional_shift",
@@ -273,7 +562,9 @@ def buildEmotionalInsights(db: Session, user_id: int):
             "message": shiftInsight
         })
 
+    # journal effect
     journalInsight = detectJournalEffect(daily)
+
     if journalInsight:
         insights.append({
             "type": "journal_effect",
@@ -281,7 +572,9 @@ def buildEmotionalInsights(db: Session, user_id: int):
             "message": journalInsight
         })
 
+    # habit effect
     habitInsight = detectHabitEffect(daily)
+
     if habitInsight:
         insights.append({
             "type": "habit_effect",
@@ -289,6 +582,7 @@ def buildEmotionalInsights(db: Session, user_id: int):
             "message": habitInsight
         })
 
+    # recurring themes
     for theme in detectRecurringTheme(chats, journals):
         insights.append({
             "type": "recurring_theme",
@@ -296,31 +590,62 @@ def buildEmotionalInsights(db: Session, user_id: int):
             "message": theme
         })
 
+    # heavy week
     if report.get("negativeCount", 0) >= 4:
         insights.append({
             "type": "heavy_week",
             "title": "Heavy Moments",
-            "message": "This week had several emotionally heavy moments, so gentle routines may help more than big changes."
+            "message": (
+                "This week had several emotionally heavy moments, "
+                "so gentle routines may help more than big changes."
+            )
         })
 
+    # positive trend
     if report.get("positiveCount", 0) > report.get("negativeCount", 0):
         insights.append({
             "type": "positive_trend",
             "title": "Positive Trend",
-            "message": "Your recent pattern shows more stable or positive signals than heavy ones."
+            "message": (
+                "Your recent pattern shows more stable or positive "
+                "signals than heavy ones."
+            )
         })
 
+    # fallback
     if not insights:
         insights.append({
             "type": "starter",
             "title": "Start Building Patterns",
-            "message": "Keep chatting, journaling, and checking in with mood so SynthMind can notice useful patterns over time."
+            "message": (
+                "Keep chatting, journaling, and checking in with mood "
+                "so SynthMind can notice useful patterns over time."
+            )
         })
 
     return {
-        "dominantEmotion": report.get("dominantEmotion", "neutral"),
-        "trend": report.get("trend", "No activity this week"),
-        "totalChats": report.get("totalChats", 0),
-        "totalJournals": report.get("totalJournals", 0),
-        "insights": insights[:5]
+        "dominantEmotion": report.get(
+            "dominantEmotion",
+            "neutral"
+        ),
+
+        "trend": report.get(
+            "trend",
+            "No activity this week"
+        ),
+
+        "totalChats": report.get(
+            "totalChats",
+            0
+        ),
+        
+
+        "totalJournals": report.get(
+            "totalJournals",
+            0
+        ),
+
+        "emotionJourney": buildEmotionJourney(chats),
+
+        "insights": insights[:6]
     }

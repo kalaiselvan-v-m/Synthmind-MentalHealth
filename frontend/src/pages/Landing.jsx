@@ -93,8 +93,7 @@ function Landing() {
   const darkOverlay = Math.min(scrollY / 1200, 0.45);
 
   return (
-    <div className="relative overflow-x-hidden bg-black text-white">
-      
+    <div className="relative min-h-screen overflow-x-hidden bg-black text-white">
       {/* FIXED CINEMATIC BACKGROUND */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <video
@@ -128,19 +127,17 @@ function Landing() {
 
       {/* CONTENT */}
       <div className="relative z-10">
-
         {/* HERO */}
         <section className="relative h-screen w-full overflow-hidden p-2">
           <div className="relative h-full w-full overflow-hidden rounded-2xl md:rounded-[2rem]">
-
             {/* NAVBAR */}
-            <nav className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
-              <div className="flex items-center gap-3 rounded-b-2xl border border-white/10 bg-black/40 px-4 py-2 backdrop-blur-2xl sm:gap-6 md:gap-12 md:rounded-b-3xl md:px-8 lg:gap-14">
+            <nav className="fixed left-1/2 top-4 z-[100] -translate-x-1/2">
+              <div className="flex items-center gap-3 rounded-full border border-[#F5F1E8]/10 bg-black/30 px-5 py-3 shadow-2xl backdrop-blur-2xl sm:gap-6 md:px-8 lg:gap-10">
                 {navItems.map((item) => (
                   <a
                     key={item.label}
                     href={item.href}
-                    className="text-[10px] font-light tracking-[0.15em] text-[#E1E0CC]/70 transition-all duration-300 hover:text-[#E1E0CC] sm:text-xs md:text-sm"
+                    className="text-[10px] font-light tracking-[0.15em] text-[#E1E0CC]/70 transition-all duration-300 hover:text-[#F5F1E8] sm:text-xs md:text-sm"
                   >
                     {item.label}
                   </a>
@@ -152,14 +149,14 @@ function Landing() {
             <div className="absolute right-4 top-4 z-30 hidden gap-3 md:flex">
               <Link
                 to="/login"
-                className="rounded-full border border-white/10 bg-black/30 px-5 py-2 text-sm text-[#E1E0CC] backdrop-blur-xl transition-all duration-300 hover:border-cyan-200/20 hover:bg-black/50"
+                className="rounded-full border border-[#F5F1E8]/10 bg-black/30 px-5 py-2 text-sm text-[#E1E0CC] backdrop-blur-xl transition-all duration-300 hover:border-[#F5F1E8]/25 hover:bg-black/50"
               >
                 Login
               </Link>
 
               <Link
                 to="/register"
-                className="rounded-full bg-[#E1E0CC] px-5 py-2 text-sm font-medium text-black transition-all duration-300 hover:scale-105"
+                className="rounded-full bg-[#E1E0CC] px-5 py-2 text-sm font-medium text-black transition-all duration-300 hover:scale-105 hover:bg-[#F5F1E8]"
               >
                 Register
               </Link>
@@ -168,7 +165,6 @@ function Landing() {
             {/* HERO CONTENT */}
             <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 sm:px-6 md:px-10">
               <div className="grid grid-cols-12 items-end gap-4">
-                
                 <div className="col-span-12 lg:col-span-8">
                   <h1
                     className="font-medium leading-[0.82] tracking-[-0.08em] text-[22vw] sm:text-[20vw] md:text-[17vw] lg:text-[13vw] xl:text-[12vw]"
@@ -187,7 +183,7 @@ function Landing() {
                       delay: 0.5,
                       ease: [0.16, 1, 0.3, 1],
                     }}
-                    className="max-w-md text-sm leading-relaxed text-white/60 md:text-base"
+                    className="max-w-md text-sm leading-relaxed text-[#E1E0CC]/65 md:text-base"
                   >
                     An emotionally intelligent AI companion that listens,
                     remembers, reflects, and gently supports your wellness
@@ -218,7 +214,6 @@ function Landing() {
                     </Link>
                   </motion.div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -230,7 +225,7 @@ function Landing() {
           className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-32"
         >
           <Reveal>
-            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-cyan-200/60">
+            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-[#E1E0CC]/60">
               About
             </p>
 
@@ -238,7 +233,7 @@ function Landing() {
               A calm emotional space designed for reflection, support, and growth.
             </h2>
 
-            <p className="mt-10 max-w-2xl text-lg leading-relaxed text-white/50">
+            <p className="mt-10 max-w-2xl text-lg leading-relaxed text-[#E1E0CC]/55">
               SynthMind combines emotional intelligence, adaptive AI memory,
               mood understanding, and supportive conversations to create a
               deeply personal wellness experience.
@@ -253,7 +248,7 @@ function Landing() {
         >
           <Reveal>
             <div>
-              <p className="mb-6 text-sm uppercase tracking-[0.35em] text-cyan-200/60">
+              <p className="mb-6 text-sm uppercase tracking-[0.35em] text-[#E1E0CC]/60">
                 Companion
               </p>
 
@@ -282,12 +277,11 @@ function Landing() {
               },
             ].map((item, index) => (
               <Reveal delay={index * 0.15} key={item.title}>
-                <div className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl transition-all duration-500 hover:border-cyan-300/20 hover:bg-white/[0.05]">
-                  
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 via-cyan-400/0 to-cyan-400/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="group relative overflow-hidden rounded-[2rem] border border-[#F5F1E8]/10 bg-[#F5F1E8]/[0.04] p-8 backdrop-blur-2xl transition-all duration-500 hover:border-[#F5F1E8]/30 hover:bg-[#F5F1E8]/[0.07]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#F5F1E8]/0 via-[#F5F1E8]/0 to-[#F5F1E8]/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                   <div className="relative z-10">
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-200">
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#F5F1E8]/10 bg-[#F5F1E8]/5 text-[#F5F1E8]">
                       {item.icon}
                     </div>
 
@@ -295,7 +289,7 @@ function Landing() {
                       {item.title}
                     </h3>
 
-                    <p className="leading-relaxed text-white/55">
+                    <p className="leading-relaxed text-[#E1E0CC]/55">
                       {item.desc}
                     </p>
                   </div>
@@ -311,7 +305,7 @@ function Landing() {
           className="mx-auto min-h-screen max-w-6xl px-6 py-32"
         >
           <Reveal>
-            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-cyan-200/60">
+            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-[#E1E0CC]/60">
               Features
             </p>
 
@@ -340,16 +334,15 @@ function Landing() {
               },
             ].map((card, index) => (
               <Reveal delay={index * 0.1} key={card.title}>
-                <div className="group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-2 hover:border-cyan-300/20 hover:bg-white/[0.05]">
-                  
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-cyan-400/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="group relative overflow-hidden rounded-[2.5rem] border border-[#F5F1E8]/10 bg-[#F5F1E8]/[0.04] p-10 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-2 hover:border-[#F5F1E8]/30 hover:bg-[#F5F1E8]/[0.07]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#F5F1E8]/0 to-[#F5F1E8]/12 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                   <div className="relative z-10">
                     <h3 className="mb-5 text-4xl font-medium tracking-tight text-[#F5F1E8]">
                       {card.title}
                     </h3>
 
-                    <p className="max-w-sm text-lg leading-relaxed text-white/55">
+                    <p className="max-w-sm text-lg leading-relaxed text-[#E1E0CC]/55">
                       {card.desc}
                     </p>
                   </div>
@@ -365,7 +358,7 @@ function Landing() {
           className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-32"
         >
           <Reveal>
-            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-cyan-200/60">
+            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-[#E1E0CC]/60">
               Safety
             </p>
 
@@ -390,9 +383,8 @@ function Landing() {
               },
             ].map((item, index) => (
               <Reveal delay={index * 0.12} key={item.title}>
-                <div className="group rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl transition-all duration-500 hover:border-cyan-300/20 hover:bg-white/[0.05]">
-                  
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-200">
+                <div className="group rounded-[2rem] border border-[#F5F1E8]/10 bg-[#F5F1E8]/[0.04] p-8 backdrop-blur-2xl transition-all duration-500 hover:border-[#F5F1E8]/30 hover:bg-[#F5F1E8]/[0.07]">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#F5F1E8]/10 bg-[#F5F1E8]/5 text-[#F5F1E8]">
                     <ShieldCheck size={22} />
                   </div>
 
@@ -400,7 +392,7 @@ function Landing() {
                     {item.title}
                   </h3>
 
-                  <p className="leading-relaxed text-white/55">
+                  <p className="leading-relaxed text-[#E1E0CC]/55">
                     {item.desc}
                   </p>
                 </div>
@@ -411,7 +403,7 @@ function Landing() {
 
         {/* FINAL CTA */}
         <section className="relative overflow-hidden px-6 py-40 text-center">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/10 to-transparent blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#F5F1E8]/10 to-transparent blur-3xl" />
 
           <Reveal>
             <div className="relative z-10">
@@ -429,7 +421,6 @@ function Landing() {
             </div>
           </Reveal>
         </section>
-
       </div>
     </div>
   );

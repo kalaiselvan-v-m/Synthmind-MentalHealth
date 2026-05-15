@@ -49,7 +49,7 @@ function Login() {
       localStorage.setItem("user", JSON.stringify(data));
 
       const completed = await checkOnboardingStatus(data.access_token);
-      navigate(completed ? "/dashboard" : "/onboarding");
+      navigate(completed ? "/chat" : "/onboarding");
     } catch (err) {
       console.error(err);
       setError("Backend connection failed");
@@ -71,7 +71,7 @@ function Login() {
 
       <div className="auth-cinematic-overlay" />
 
-      <Link to="/" className="auth-brand">
+      <Link to="/" className="auth-brand cream">
         SynthMind
       </Link>
 
@@ -80,10 +80,12 @@ function Login() {
           initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="auth-copy"
+          className="auth-copy cream"
         >
           <p>Welcome back</p>
+
           <h1>Your emotional space is still here.</h1>
+
           <span>
             Continue your private wellness journey with an AI companion that
             remembers, reflects, and supports you gently.
@@ -94,14 +96,14 @@ function Login() {
           initial={{ opacity: 0, y: 50, filter: "blur(14px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="auth-cinematic-card"
+          className="auth-cinematic-card cream"
         >
-          <div className="auth-card-header">
+          <div className="auth-card-header cream">
             <p>Login</p>
             <h2>Enter SynthMind</h2>
           </div>
 
-          <form onSubmit={handleLogin} className="auth-form cinematic">
+          <form onSubmit={handleLogin} className="auth-form cinematic cream">
             <input
               name="email"
               type="email"
@@ -128,7 +130,7 @@ function Login() {
             </button>
           </form>
 
-          <p className="auth-switch cinematic">
+          <p className="auth-switch cinematic cream">
             New here? <Link to="/register">Create your space</Link>
           </p>
         </motion.div>

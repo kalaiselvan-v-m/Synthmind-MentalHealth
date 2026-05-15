@@ -20,7 +20,12 @@ def chat(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
-    return process_chat(db, currentUser.id, data.message, data.mode)
+    return process_chat(
+        db,
+        currentUser.id,
+        data.message,
+        data.mode
+    )
 
 
 @router.post("/stream")
@@ -29,37 +34,73 @@ def chatStream(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
-    prepared = process_chat_stream(db, currentUser.id, data.message, data.mode)
+    prepared = process_chat_stream(
+        db,
+        currentUser.id,
+        data.message,
+        data.mode
+    )
 
     def eventGenerator():
         fullReply = ""
 
-        for chunk in streamLlamaReply(
-            message=data.message,
-            emotion=prepared["emotionData"]["topEmotion"],
-            memory=prepared["memory"],
-            risk=prepared["riskLevel"],
-            brain=prepared["brain"]
-        ):
-            fullReply += chunk
-            yield chunk
+        try:
+            # -----------------------------
+            # STREAM AI RESPONSE
+            # -----------------------------
+            for chunk in streamLlamaReply(
+                message=data.message,
+                emotion=prepared["emotionData"]["topEmotion"],
+                intensity=prepared["emotionIntensity"],
+                memory=prepared["memory"],
+                risk=prepared["riskLevel"],
+                brain=prepared["brain"],
+                escalate=prepared["escalate"]
+            ):
+                fullReply += chunk
+                yield chunk
 
-        chat = ChatHistory(
-            user_id=currentUser.id,
-            message=data.message,
-            response=fullReply,
-            mode=prepared["brain"]["intent"],
-            emotion=prepared["emotionData"]["topEmotion"],
-            confidence=str(prepared["emotionData"]["confidence"])
-        )
+            # -----------------------------
+            # FORCE STREAM CLOSE FAST
+            # -----------------------------
+            yield ""
 
-        db.add(chat)
-        db.flush()
-        db.commit()
+        except Exception as e:
+            print("STREAM ERROR:", str(e))
+            yield "I’m having trouble responding right now."
 
-        updateLongTermMemory(db, currentUser.id, data.message)
+        # -----------------------------
+        # SAVE AFTER STREAM FINISHES
+        # -----------------------------
+        try:
+            chat = ChatHistory(
+                user_id=currentUser.id,
+                message=data.message,
+                response=fullReply,
+                mode=prepared["brain"]["intent"],
+                emotion=prepared["emotionData"]["topEmotion"],
+                confidence=str(
+                    prepared["emotionData"]["confidence"]
+                )
+            )
 
-    return StreamingResponse(eventGenerator(), media_type="text/plain")
+            db.add(chat)
+            db.commit()
+
+            # lightweight memory update
+            updateLongTermMemory(
+                db,
+                currentUser.id,
+                data.message
+            )
+
+        except Exception as e:
+            print("POST STREAM SAVE ERROR:", str(e))
+
+    return StreamingResponse(
+        eventGenerator(),
+        media_type="text/plain"
+    )
 
 
 @router.get("/latest-meta")
@@ -83,7 +124,11 @@ def getLatestChatMeta(
         }
 
     from backend.service.riskService import calculateRiskScore
-    riskData = calculateRiskScore(db, currentUser.id)
+
+    riskData = calculateRiskScore(
+        db,
+        currentUser.id
+    )
 
     return {
         "emotion": chat.emotion or "neutral",
@@ -111,6 +156,12 @@ def delete_history(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
-    db.query(ChatHistory).filter(ChatHistory.user_id == currentUser.id).delete()
+    db.query(ChatHistory).filter(
+        ChatHistory.user_id == currentUser.id
+    ).delete()
+
     db.commit()
-    return {"message": "Chat history cleared"}
+
+    return {
+        "message": "Chat history cleared"
+    }

@@ -10,16 +10,26 @@ const defaultMessages = [
 
 function Chat() {
   const [message, setMessage] = useState("");
-
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem("synthChatMessages");
-    return saved ? JSON.parse(saved) : defaultMessages;
-  });
-
+  const [messages, setMessages] = useState(defaultMessages);
   const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
 
+  const chatEndRef = useRef(null);
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    fetchChatHistory();
+
+    const handleHistoryClear = () => {
+      localStorage.removeItem("synthChatMessages");
+      setMessages(defaultMessages);
+    };
+
+    window.addEventListener("chatHistoryCleared", handleHistoryClear);
+
+    return () => {
+      window.removeEventListener("chatHistoryCleared", handleHistoryClear);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("synthChatMessages", JSON.stringify(messages));
@@ -29,6 +39,73 @@ function Chat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const fetchChatHistory = async () => {
+    try {
+      if (!token) {
+        setMessages(defaultMessages);
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8000/chat/history", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !Array.isArray(data) || data.length === 0) {
+        setMessages(defaultMessages);
+        return;
+      }
+
+      const formattedMessages = data
+        .reverse()
+        .flatMap((chat) => [
+          {
+            sender: "user",
+            text: chat.message,
+          },
+          {
+            sender: "ai",
+            text: chat.response,
+            streaming: false,
+          },
+        ]);
+
+      setMessages([defaultMessages[0], ...formattedMessages]);
+    } catch (err) {
+      console.error("History fetch error:", err);
+
+      const saved = localStorage.getItem("synthChatMessages");
+
+      if (saved) {
+        const parsed = JSON.parse(saved).map((msg) => ({
+          ...msg,
+          streaming: false,
+        }));
+
+        setMessages(parsed);
+      } else {
+        setMessages(defaultMessages);
+      }
+    }
+  };
+
+  const updateLastAiMessage = (text, streaming) => {
+    setMessages((prev) => {
+      const updated = [...prev];
+
+      updated[updated.length - 1] = {
+        sender: "ai",
+        text,
+        streaming,
+      };
+
+      return updated;
+    });
+  };
+
   const sendMessage = async () => {
     if (!message.trim() || loading) return;
 
@@ -37,16 +114,18 @@ function Chat() {
       return;
     }
 
-    const currentMessage = message;
+    const currentMessage = message.trim();
     setMessage("");
 
     setMessages((prev) => [
       ...prev,
-      { sender: "user", text: currentMessage },
+      { sender: "user", text: currentMessage, streaming: false },
       { sender: "ai", text: "", streaming: true },
     ]);
 
     setLoading(true);
+
+    let aiText = "";
 
     try {
       const response = await fetch("http://127.0.0.1:8000/chat/stream", {
@@ -68,61 +147,54 @@ function Chat() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
-      let aiText = "";
-
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
 
-        const chunk = decoder.decode(value);
+        if (done) {
+            setLoading(false);
+
+            updateLastAiMessage(
+              aiText.trim() || "I’m here. say that again once?",
+              false
+            );
+            break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        if (!chunk) continue;
+
         aiText += chunk;
 
-        setMessages((prev) => {
-          const updated = [...prev];
-
-          updated[updated.length - 1] = {
-            sender: "ai",
-            text: aiText,
-            streaming: true,
-          };
-
-          return updated;
-        });
+        updateLastAiMessage(aiText, true);
       }
-
-      setMessages((prev) => {
-        const updated = [...prev];
-
-        updated[updated.length - 1] = {
-          sender: "ai",
-          text: aiText,
-          streaming: false,
-        };
-
-        return updated;
-      });
     } catch (err) {
       console.error(err);
 
-      setMessages((prev) => {
-        const updated = [...prev];
-
-        updated[updated.length - 1] = {
-          sender: "ai",
-          text: "I’m having trouble connecting right now. Please try again.",
-          streaming: false,
-        };
-
-        return updated;
-      });
+      updateLastAiMessage(
+        "I’m having trouble connecting right now. Please try again.",
+        false
+      );
     }
-
-    setLoading(false);
   };
 
-  const clearLocalChat = () => {
-    localStorage.removeItem("synthChatMessages");
-    setMessages(defaultMessages);
+  const clearLocalChat = async () => {
+    try {
+      if (token) {
+        await fetch("http://127.0.0.1:8000/chat/history", {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+
+      localStorage.removeItem("synthChatMessages");
+      setMessages(defaultMessages);
+      window.dispatchEvent(new Event("chatHistoryCleared"));
+    } catch (err) {
+      console.error("Clear chat error:", err);
+    }
   };
 
   return (
@@ -136,35 +208,42 @@ function Chat() {
           <p>Private emotional companion</p>
         </div>
 
-        <div className="replika-status" onClick={clearLocalChat}>
+        <button className="replika-status" onClick={clearLocalChat}>
           <span></span>
-          Online
-        </div>
+          Clear chat
+        </button>
       </header>
 
       <main className="replika-chat-messages">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`replika-message-row ${
-              msg.sender === "user" ? "user" : "ai"
-            }`}
-          >
-            <div
-              className={`replika-bubble ${
-                msg.sender === "user" ? "user-bubble" : "ai-bubble"
-              }`}
-            >
-              {msg.text || " "}
-
-              {msg.streaming && <span className="typing-cursor">▋</span>}
-            </div>
+  {messages.map((msg, index) => (
+    <div
+      key={index}
+      className={`replika-message-row ${
+        msg.sender === "user" ? "user" : "ai"
+      }`}
+    >
+      <div
+        className={`replika-bubble ${
+          msg.sender === "user"
+            ? "user-bubble"
+            : "ai-bubble"
+        }`}
+      >
+        {msg.streaming && !msg.text ? (
+          <div className="synthmind-thinking">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-        ))}
+        ) : (
+          msg.text || " "
+        )}
+      </div>
+    </div>
+  ))}
 
-        <div ref={chatEndRef} />
-      </main>
-
+  <div ref={chatEndRef} />
+</main>
       <footer className="replika-chat-input-area">
         <div className="replika-input-pill">
           <textarea

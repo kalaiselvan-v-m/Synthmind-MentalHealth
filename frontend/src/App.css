@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap");
 /* ===== GLOBAL ===== */
 * {
   box-sizing: border-box;
@@ -2014,7 +2016,6 @@ a {
   transform: translateY(-50%);
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 /* ===== GLOBAL FONT ===== */
 
@@ -2047,8 +2048,8 @@ a {
   background:
     linear-gradient(
       180deg,
-      rgba(0,0,0,0.18) 0%,
-      rgba(0,0,0,0.42) 100%
+      rgba(0,0,0,0.10) 0%,
+      rgba(0,0,0,0.32) 100%
     );
 
   pointer-events: none;
@@ -2057,7 +2058,7 @@ a {
 /* VIDEO */
 
 .cinematic-video {
-   position: absolute;
+  position: absolute;
   inset: 0;
 
   width: 100%;
@@ -2065,15 +2066,15 @@ a {
 
   object-fit: cover;
 
-  transform: scale(1.08);
+  transform: scale(1.04);
 
   filter:
-    blur(10px)
-    brightness(0.78)
-    contrast(1.04)
-    saturate(1.08);
+    blur(2px)
+    brightness(0.72)
+    contrast(1.08)
+    saturate(1.12);
 
-  opacity: 0.96;
+  opacity: 0.98;
 
   backface-visibility: hidden;
 }
@@ -2086,21 +2087,21 @@ a {
 
   z-index: 2;
 
-  backdrop-filter: blur(42px);
-  -webkit-backdrop-filter: blur(42px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 
   mask-image: linear-gradient(
     to top,
-    black 0%,
-    rgba(0,0,0,0.8) 20%,
-    transparent 55%
+    rgba(0,0,0,0.7) 0%,
+    rgba(0,0,0,0.35) 30%,
+    transparent 70%
   );
 
   -webkit-mask-image: linear-gradient(
     to top,
-    black 0%,
-    rgba(0,0,0,0.8) 20%,
-    transparent 55%
+    rgba(0,0,0,0.7) 0%,
+    rgba(0,0,0,0.35) 30%,
+    transparent 70%
   );
 
   pointer-events: none;
@@ -2233,7 +2234,6 @@ a {
   }
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap");
 
 :root {
   --font-display: "Instrument Serif", serif;
@@ -5426,4 +5426,256 @@ body {
     0 0 18px rgba(255,196,122,0.12);
 
   letter-spacing: -0.02em;
+}
+
+/* ===== CREAM AUTH THEME FIX ===== */
+
+.auth-brand.cream {
+  color: #f5f1e8;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.055em;
+}
+
+.auth-copy.cream p,
+.auth-card-header.cream p {
+  color: rgba(225, 224, 204, 0.68);
+}
+
+.auth-copy.cream h1 {
+  color: #f5f1e8;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+.auth-copy.cream span {
+  color: rgba(225, 224, 204, 0.58);
+}
+
+.auth-cinematic-card.cream {
+  background:
+    linear-gradient(135deg, rgba(245,241,232,0.05), rgba(245,241,232,0.015)),
+    rgba(5, 5, 5, 0.52);
+  border: 1px solid rgba(245, 241, 232, 0.11);
+  box-shadow:
+    0 34px 110px rgba(0,0,0,0.55),
+    0 0 60px rgba(245,241,232,0.06),
+    inset 0 1px 1px rgba(245,241,232,0.06);
+}
+
+.auth-card-header.cream h2 {
+  color: #f5f1e8;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+.auth-form.cinematic.cream input {
+  border: 1px solid rgba(245,241,232,0.12);
+  background: rgba(0,0,0,0.28);
+  color: #f5f1e8;
+}
+
+.auth-form.cinematic.cream input::placeholder {
+  color: rgba(225,224,204,0.42);
+}
+
+.auth-form.cinematic.cream input:focus {
+  border-color: rgba(245,241,232,0.36);
+  background: rgba(0,0,0,0.38);
+  box-shadow: 0 0 0 4px rgba(245,241,232,0.08);
+}
+
+.auth-form.cinematic.cream button {
+  color: #000;
+  background: #f5f1e8;
+  box-shadow: 0 18px 45px rgba(245,241,232,0.16);
+}
+
+.auth-form.cinematic.cream button:hover {
+  background: #e1e0cc;
+}
+
+.auth-switch.cinematic.cream {
+  color: rgba(225,224,204,0.52);
+}
+
+.auth-switch.cinematic.cream a {
+  color: #f5f1e8;
+}
+
+.synthmind-thinking {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px;
+}
+
+.synthmind-thinking span {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.85);
+
+  animation: synthmindTyping 1.2s infinite ease-in-out;
+}
+
+.synthmind-thinking span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.synthmind-thinking span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes synthmindTyping {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.synth-insights-cards {
+  margin-top: 32px;
+  padding: 28px;
+  border-radius: 32px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(22px);
+}
+
+.synth-insights-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.synth-emotional-card {
+  padding: 22px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.synth-emotional-card small {
+  display: block;
+  margin-bottom: 10px;
+  color: rgba(255, 214, 165, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.synth-emotional-card p {
+  margin: 0;
+  color: rgba(255, 237, 213, 0.78);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* ============================= */
+/* 🔹 Emotional Journey */
+/* ============================= */
+
+.synth-journey-section {
+  margin-top: 32px;
+  padding: 28px;
+  border-radius: 32px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(24px);
+}
+
+.synth-journey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.synth-journey-card {
+  padding: 22px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  transition: all 0.3s ease;
+}
+
+.synth-journey-card:hover {
+  transform: translateY(-3px);
+
+  border-color: rgba(255, 214, 165, 0.2);
+
+  background: rgba(255,255,255,0.08);
+}
+
+.synth-journey-card small {
+  display: block;
+  margin-bottom: 12px;
+
+  color: rgba(255, 214, 165, 0.82);
+
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.synth-journey-card h3 {
+  margin: 0 0 10px;
+
+  color: #fff7ed;
+
+  text-transform: capitalize;
+
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.synth-journey-card p {
+  margin: 0;
+
+  color: rgba(255, 237, 213, 0.72);
+
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* ============================= */
+/* 🔹 Emotion Colors */
+/* ============================= */
+
+.emotion-joy,
+.emotion-gratitude,
+.emotion-relief,
+.emotion-optimism {
+  color: #ffd166;
+}
+
+.emotion-sadness,
+.emotion-grief {
+  color: #8ecae6;
+}
+
+.emotion-fear,
+.emotion-nervousness {
+  color: #cdb4db;
+}
+
+.emotion-anger {
+  color: #ff6b6b;
+}
+
+.emotion-neutral {
+  color: #f8f9fa;
+}
+
+.emotion-calm {
+  color: #95d5b2;
 }

@@ -127,7 +127,7 @@ function Onboarding() {
         return;
       }
 
-      navigate("/dashboard");
+      navigate("/chat");
     } catch (err) {
       console.error(err);
       setError("Backend connection failed");

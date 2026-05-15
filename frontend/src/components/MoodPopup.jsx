@@ -39,9 +39,9 @@ function MoodPopup() {
     const today = new Date().toDateString();
     const lastMoodDate = localStorage.getItem("lastMoodDate");
 
-   if (lastMoodDate !== today) {
+   //if (lastMoodDate !== today) {
     setShow(true);
-   }   
+   //}   
   }, []);
 
   const getUserId = () => {

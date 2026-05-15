@@ -24,6 +24,8 @@ from backend.models import userMemory
 from backend.models import onboarding
 from backend.models import user
 from backend.models import habit
+from backend.models import crisisEvent
+
 from backend.utils.onboardingQuestion import seed_onboarding_questions
 
 # ✅ CREATE APP ONLY ONCE
@@ -45,8 +47,15 @@ Base.metadata.create_all(bind=engine)
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
+
     try:
+        print("🔥 Seeding onboarding questions...")
         seed_onboarding_questions(db)
+        print("✅ Onboarding seed completed")
+
+    except Exception as e:
+        print("❌ Seed error:", e)
+
     finally:
         db.close()
 

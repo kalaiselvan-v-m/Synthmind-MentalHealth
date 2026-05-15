@@ -59,7 +59,7 @@ function Register() {
 
       <div className="auth-cinematic-overlay" />
 
-      <Link to="/" className="auth-brand">
+      <Link to="/" className="auth-brand cream">
         SynthMind
       </Link>
 
@@ -68,10 +68,12 @@ function Register() {
           initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="auth-copy"
+          className="auth-copy cream"
         >
           <p>Begin journey</p>
+
           <h1>Create a calm space that grows with you.</h1>
+
           <span>
             Start with a private emotional wellness space shaped around your
             mood, reflections, habits, and support needs.
@@ -82,14 +84,14 @@ function Register() {
           initial={{ opacity: 0, y: 50, filter: "blur(14px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="auth-cinematic-card"
+          className="auth-cinematic-card cream"
         >
-          <div className="auth-card-header">
+          <div className="auth-card-header cream">
             <p>Register</p>
             <h2>Start SynthMind</h2>
           </div>
 
-          <form onSubmit={handleRegister} className="auth-form cinematic">
+          <form onSubmit={handleRegister} className="auth-form cinematic cream">
             <input
               name="name"
               type="text"
@@ -125,7 +127,7 @@ function Register() {
             </button>
           </form>
 
-          <p className="auth-switch cinematic">
+          <p className="auth-switch cinematic cream">
             Already have an account? <Link to="/login">Enter your space</Link>
           </p>
         </motion.div>
