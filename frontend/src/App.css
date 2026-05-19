@@ -5679,3 +5679,40 @@ body {
 .emotion-calm {
   color: #95d5b2;
 }
+
+.chat-message-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+}
+
+.user .chat-message-wrapper {
+  align-items: flex-end;
+}
+
+.ai .chat-message-wrapper {
+  align-items: flex-start;
+}
+
+.chat-time {
+  margin-top: 5px;
+  font-size: 11px;
+  opacity: 0.5;
+  padding: 0 6px;
+}
+
+.user-time {
+  text-align: right;
+}
+
+.ai-time {
+  text-align: left;
+}
+
+.chat-date-divider {
+  text-align: center;
+  margin: 20px 0;
+  font-size: 13px;
+  opacity: 0.6;
+  font-weight: 500;
+}

@@ -14,6 +14,7 @@ from backend.service.emotionTimelineService import buildEmotionTimelineSummary
 from backend.service.crisisService import analyzeCrisis
 from backend.service.emotionalFlowService import buildEmotionalFlow
 from backend.service.communicationStyleService import detectCommunicationStyle
+from backend.service.ragMemoryService import saveRagMemory, searchRagMemory
 from backend.service.memoryService import (
     updateLongTermMemory,
     getRelevantMemories,
@@ -24,6 +25,10 @@ from backend.service.memoryService import (
 from backend.service.personalityStyleService import (
     detectPersonalityStyle,
     formatPersonalityStyle
+)
+from backend.service.ragMemoryService import (
+    saveRagMemory,
+    searchRagMemory
 )
 
 
@@ -203,6 +208,9 @@ Support: {profile.support_level}
         message
     )
 
+    ragMemory = searchRagMemory(db, user_id, message, emotionData["topEmotion"])
+
+
     if longMemory:
         longMemory = longMemory[:350]
 
@@ -288,6 +296,9 @@ RECENT CONVERSATION:
 
 IMPORTANT MEMORY:
 {longMemory}
+
+RELEVANT RAG MEMORY:
+{ragMemory}
 
 PERSONALITY:
 {personalityText}
@@ -399,6 +410,21 @@ def process_chat(db: Session, user_id: int, message: str, mode: str):
     db.refresh(chat)
 
     updateLongTermMemory(db, user_id, message)
+    saveRagMemory(
+    db,
+    user_id,
+    f"""
+User message:
+{message}
+
+Emotion:
+{prepared['emotionData']['topEmotion']}
+
+Risk:
+{prepared['riskLevel']}
+""",
+    prepared["emotionData"]["topEmotion"]
+)
     decayMemories(db, user_id)
 
     return {

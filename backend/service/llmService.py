@@ -241,8 +241,8 @@ def generateLlamaReply(
     try:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
-            temperature=0.45,
-            max_tokens=120,
+            temperature=0.70,
+            max_tokens=160,
             messages=[
                 {
                     "role": "system",
@@ -302,7 +302,7 @@ def streamLlamaReply(
     try:
         stream = client.chat.completions.create(
             model=MODEL_NAME,
-            temperature=0.45,
+            temperature=0.70,
             max_tokens=120,
             stream=True,
             messages=[

@@ -25,6 +25,7 @@ from backend.models import onboarding
 from backend.models import user
 from backend.models import habit
 from backend.models import crisisEvent
+from backend.models import ragMemory
 
 from backend.utils.onboardingQuestion import seed_onboarding_questions
 
