@@ -33,6 +33,7 @@ const fadeUp = {
 
 function RecoveryPlan() {
   const [data, setData] = useState(null);
+  const [recoveryIntel, setRecoveryIntel] = useState(null);
 
   useEffect(() => {
     fetchPlan();
@@ -42,6 +43,12 @@ function RecoveryPlan() {
     try {
       const res = await API.get("/recovery-plan/1");
       setData(res.data);
+      const recoveryRes = await API.get(
+      "/recovery-intelligence"
+    );
+
+      setRecoveryIntel(recoveryRes.data);
+      setRecoveryIntel(res.data.recovery_intel);
     } catch (err) {
       console.error(err);
     }
@@ -124,7 +131,58 @@ function RecoveryPlan() {
           <strong>{data.dominant_emotion}</strong>
         </div>
       </motion.section>
+      {recoveryIntel?.hasActiveRecovery && (
+        <motion.section
+          className="synth-recovery-intel-card"
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
 
+          <div className="synth-recovery-intel-glow"></div>
+
+          <div className="synth-recovery-intel-header">
+
+            <div>
+              <p>Recovery intelligence</p>
+
+              <h2>
+                Emotional recovery tracking
+              </h2>
+            </div>
+
+            <span
+              className={`recovery-status-badge ${
+                recoveryIntel.recoveryStatus
+              }`}
+            >
+              {recoveryIntel.recoveryStatus}
+            </span>
+
+          </div>
+
+          <div className="synth-recovery-intel-content">
+
+            <div>
+              <span>Previous crisis level</span>
+
+              <strong>
+                {recoveryIntel.riskLevel}
+              </strong>
+            </div>
+
+            <div>
+              <span>Follow-up support</span>
+
+              <p>
+                {recoveryIntel.followUpMessage}
+              </p>
+            </div>
+
+          </div>
+
+        </motion.section>
+      )}
       <motion.section
         className="synth-recovery-section"
         variants={fadeUp}

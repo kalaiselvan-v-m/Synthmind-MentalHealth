@@ -527,7 +527,118 @@ def buildEmotionJourney(chats):
         })
 
     return timeline[-7:]
+# ------------------------------------------------
+# 🔹 MOOD HEATMAP
+# ------------------------------------------------
+def buildMoodHeatmap(chats, moods):
+    grouped = defaultdict(list)
 
+    # chat emotions
+    for chat in chats:
+        if not chat.created_at:
+            continue
+
+        day = chat.created_at.strftime("%Y-%m-%d")
+
+        grouped[day].append(
+            chat.emotion or "neutral"
+        )
+
+    # mood entries
+    for mood in moods:
+        if not mood.created_at:
+            continue
+
+        day = mood.created_at.strftime("%Y-%m-%d")
+
+        grouped[day].append(
+            mood.mood or "Normal"
+        )
+
+    heatmap = []
+
+    for day, values in grouped.items():
+
+        negative = 0
+        positive = 0
+
+        for value in values:
+
+            lower = value.lower()
+
+            if lower in [
+                "fear",
+                "sadness",
+                "grief",
+                "nervousness",
+                "anger",
+                "low",
+                "overwhelmed"
+            ]:
+                negative += 1
+
+            else:
+                positive += 1
+
+        intensity = "neutral"
+
+        if negative >= 4:
+            intensity = "heavy"
+
+        elif negative >= 2:
+            intensity = "low"
+
+        elif positive >= negative:
+            intensity = "positive"
+
+        heatmap.append({
+            "date": day,
+            "intensity": intensity,
+            "negativeCount": negative,
+            "positiveCount": positive
+        })
+
+    return sorted(
+        heatmap,
+        key=lambda x: x["date"]
+    )[-30:]
+
+def buildWeeklyReflection(report, insights):
+    trend = report.get("trend", "Mixed emotional week")
+    dominantEmotion = report.get("dominantEmotion", "neutral")
+    negativeCount = report.get("negativeCount", 0)
+    positiveCount = report.get("positiveCount", 0)
+
+    if negativeCount >= 4:
+        message = (
+            "This week seems to have carried some heavier moments. "
+            "Try keeping your next steps gentle instead of pushing yourself too hard."
+        )
+
+    elif positiveCount > negativeCount:
+        message = (
+            "This week shows some steadier emotional signals. "
+            "It looks like there were moments where things felt a little lighter."
+        )
+
+    elif dominantEmotion in ["sadness", "fear", "nervousness", "grief"]:
+        message = (
+            "This week feels emotionally mixed, with some signs of mental weight. "
+            "Small calming routines may help you feel more grounded."
+        )
+
+    else:
+        message = (
+            "This week looks emotionally balanced overall. "
+            "Keep checking in with yourself so SynthMind can notice deeper patterns."
+        )
+
+    return {
+        "title": "Weekly Reflection",
+        "trend": trend,
+        "dominantEmotion": dominantEmotion,
+        "message": message
+    }
 # ------------------------------------------------
 # 🔹 BUILD INSIGHTS
 # ------------------------------------------------
@@ -538,7 +649,7 @@ def buildEmotionalInsights(db: Session, user_id: int):
     journals = getRecentJournals(db, user_id)
     moods = getRecentMoods(db, user_id)
     habits = getRecentHabitCompletions(db, user_id)
-
+    
     daily = buildDailyMap(
         chats,
         journals,
@@ -646,6 +757,7 @@ def buildEmotionalInsights(db: Session, user_id: int):
         ),
 
         "emotionJourney": buildEmotionJourney(chats),
-
+        "moodHeatmap": buildMoodHeatmap(chats, moods),
+        "weeklyReflection": buildWeeklyReflection(report, insights),
         "insights": insights[:6]
     }

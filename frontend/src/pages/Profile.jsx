@@ -37,8 +37,18 @@ function Profile() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [trustedContact, setTrustedContact] = useState({
+  contact_name: "",
+  contact_phone: "",
+  contact_email: "",
+  relationship: "",
+  alerts_enabled: true,
+  notify_on_critical: true,
+});
+
   useEffect(() => {
     fetchProfile();
+    fetchTrustedContact();
   }, []);
 
   const fetchProfile = async () => {
@@ -77,6 +87,86 @@ function Profile() {
 
     fetchProfile();
   };
+
+  const fetchTrustedContact = async () => {
+  try {
+    const res = await fetch(
+      "http://127.0.0.1:8000/trusted-contact",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const result = await res.json();
+
+    if (result) {
+      setTrustedContact({
+        contact_name: result.contact_name || "",
+        contact_phone: result.contact_phone || "",
+        contact_email: result.contact_email || "",
+        relationship: result.relationship || "",
+        alerts_enabled:
+          result.alerts_enabled ?? true,
+        notify_on_critical:
+          result.notify_on_critical ?? true,
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const saveTrustedContact = async () => {
+  try {
+    await fetch(
+      "http://127.0.0.1:8000/trusted-contact",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify(trustedContact),
+      }
+    );
+
+    alert("Trusted contact saved");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const deleteTrustedContact = async () => {
+  try {
+    await fetch(
+      "http://127.0.0.1:8000/trusted-contact",
+      {
+        method: "DELETE",
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setTrustedContact({
+      contact_name: "",
+      contact_phone: "",
+      contact_email: "",
+      relationship: "",
+      alerts_enabled: true,
+      notify_on_critical: true,
+    });
+
+    alert("Trusted contact removed");
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const logout = () => {
     localStorage.clear();
@@ -215,7 +305,129 @@ function Profile() {
           </div>
         </div>
       </motion.section>
+      <motion.section
+        className="synth-profile-card synth-safety-card"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
 
+        <div className="synth-profile-card-header">
+          <ShieldAlert size={20} />
+
+          <div>
+            <p>Safety & crisis support</p>
+            <h2>Your trusted support contact</h2>
+          </div>
+        </div>
+
+        <small className="synth-safety-note">
+          SynthMind will never contact someone without your permission.
+        </small>
+
+        <div className="synth-safety-grid">
+
+          <input
+            type="text"
+            placeholder="Trusted contact name"
+            value={trustedContact.contact_name}
+            onChange={(e) =>
+              setTrustedContact({
+                ...trustedContact,
+                contact_name: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="text"
+            placeholder="Relationship"
+            value={trustedContact.relationship}
+            onChange={(e) =>
+              setTrustedContact({
+                ...trustedContact,
+                relationship: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="text"
+            placeholder="Phone number"
+            value={trustedContact.contact_phone}
+            onChange={(e) =>
+              setTrustedContact({
+                ...trustedContact,
+                contact_phone: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={trustedContact.contact_email}
+            onChange={(e) =>
+              setTrustedContact({
+                ...trustedContact,
+                contact_email: e.target.value,
+              })
+            }
+          />
+
+        </div>
+
+        <div className="synth-safety-toggle-row">
+
+          <label>
+            <input
+              type="checkbox"
+              checked={trustedContact.alerts_enabled}
+              onChange={(e) =>
+                setTrustedContact({
+                  ...trustedContact,
+                  alerts_enabled: e.target.checked,
+                })
+              }
+            />
+
+            Enable crisis support
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              checked={trustedContact.notify_on_critical}
+              onChange={(e) =>
+                setTrustedContact({
+                  ...trustedContact,
+                  notify_on_critical: e.target.checked,
+                })
+              }
+            />
+
+            Notify during critical emotional risk
+          </label>
+
+        </div>
+
+        <div className="synth-safety-actions">
+
+          <button onClick={saveTrustedContact}>
+            Save trusted contact
+          </button>
+
+          <button
+            className="danger-btn"
+            onClick={deleteTrustedContact}
+          >
+            Remove
+          </button>
+
+        </div>
+
+      </motion.section>
       <motion.section
         className="synth-profile-actions"
         variants={fadeUp}

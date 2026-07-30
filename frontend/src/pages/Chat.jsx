@@ -26,6 +26,24 @@ function Chat() {
   const [messages, setMessages] = useState(createDefaultMessages);
   const [loading, setLoading] = useState(false);
 
+  const [crisisState, setCrisisState] = useState({
+  visible: false,
+  riskLevel: "LOW",
+  response: "",
+});
+  
+  const [groundingOpen, setGroundingOpen] = useState(false);
+
+  const groundingSteps = [
+    "Breathe in slowly for 4 seconds.",
+    "Hold your breath gently for 4 seconds.",
+    "Exhale slowly for 6 seconds.",
+    "Relax your shoulders.",
+    "Focus on one thing you can see nearby.",
+  ];
+
+  const [groundingStep, setGroundingStep] = useState(0);
+
   const chatEndRef = useRef(null);
   const token = localStorage.getItem("token");
 
@@ -49,8 +67,36 @@ function Chat() {
   }, [messages]);
 
   useEffect(() => {
+  if (!groundingOpen) return;
+
+  if (groundingStep >= groundingSteps.length - 1)
+    return;
+
+  const timer = setTimeout(() => {
+    setGroundingStep((prev) => prev + 1);
+  }, 4000);
+
+  return () => clearTimeout(timer);
+
+}, [groundingStep, groundingOpen]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+  if (!groundingOpen) return;
+
+  if (groundingStep >= groundingSteps.length - 1)
+    return;
+
+  const timer = setTimeout(() => {
+    setGroundingStep((prev) => prev + 1);
+  }, 4000);
+
+  return () => clearTimeout(timer);
+
+}, [groundingStep, groundingOpen]);
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -183,6 +229,31 @@ function Chat() {
         throw new Error("Chat stream failed");
       }
 
+      const riskCheck = await fetch(
+  "http://127.0.0.1:8000/chat/latest-meta",
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+const riskData = await riskCheck.json();
+
+if (
+  riskData.riskLevel === "HIGH" ||
+  riskData.riskLevel === "CRITICAL"
+) {
+  setCrisisState({
+    visible: true,
+    riskLevel: riskData.riskLevel,
+    response:
+      riskData.riskLevel === "CRITICAL"
+        ? "You seem like you may be in a really heavy moment right now."
+        : "You seem emotionally overwhelmed right now.",
+  });
+}
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
@@ -199,6 +270,30 @@ function Chat() {
         }
 
         const chunk = decoder.decode(value, { stream: true });
+
+        if (chunk.startsWith("__CRISIS__")) {
+
+          try {
+            const jsonText = chunk
+              .replace("__CRISIS__", "")
+              .trim();
+
+            const crisisData = JSON.parse(
+              jsonText.replaceAll("'", '"')
+            );
+
+            setCrisisState({
+              visible: true,
+              riskLevel: crisisData.riskLevel,
+              response: crisisData.response,
+            });
+
+          } catch (err) {
+            console.error("Crisis parse error:", err);
+          }
+
+          continue;
+        }
 
         if (!chunk) continue;
 
@@ -307,6 +402,144 @@ function Chat() {
 
         <div ref={chatEndRef} />
       </main>
+
+      {crisisState.visible && (
+  <div className="synth-crisis-card">
+
+    <div className="synth-crisis-glow"></div>
+
+    <h3>
+      {crisisState.riskLevel === "CRITICAL"
+        ? "Stay with us for a second."
+        : "You don’t have to carry this alone."}
+    </h3>
+
+    <p>
+      {crisisState.response}
+    </p>
+
+    <div className="synth-crisis-actions">
+
+      <button
+       onClick={() => {
+        setGroundingOpen(true);
+
+        setGroundingStep(0);
+
+        setCrisisState({
+          ...crisisState,
+          visible: false,
+        });
+      }}
+      >
+        Ground me
+      </button>
+
+      <button
+        onClick={async () => {
+          try {
+            const res = await fetch(
+              "http://127.0.0.1:8000/trusted-contact/notify-preview",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            const data = await res.json();
+
+            alert(data.message);
+          } catch (err) {
+            console.error(err);
+            alert("Unable to prepare trusted contact notification.");
+          }
+        }}
+      >
+        Notify trusted contact
+      </button>
+
+      <button
+        onClick={() => {
+          setGroundingOpen(true);
+
+          setGroundingStep(0);
+
+          setCrisisState({
+            ...crisisState,
+            visible: false,
+          });
+        }}
+      >
+        Not now
+      </button>
+
+    </div>
+
+  </div>
+)} 
+{groundingOpen && (
+
+  <div className="synth-grounding-overlay">
+
+    <div className="synth-grounding-card">
+
+      <div className="grounding-pulse"></div>
+
+      <small>Grounding exercise</small>
+
+      <h2>
+        Take this one moment slowly.
+      </h2>
+
+      <p>
+        {groundingSteps[groundingStep]}
+      </p>
+
+      <div className="grounding-progress">
+
+        {groundingSteps.map((_, index) => (
+          <span
+            key={index}
+            className={
+              index <= groundingStep
+                ? "active"
+                : ""
+            }
+          />
+        ))}
+
+      </div>
+
+      <button
+        onClick={async () => {
+
+          try {
+            await fetch(
+              "http://127.0.0.1:8000/crisis-support/grounding-complete",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+          } catch (err) {
+            console.error(err);
+          }
+
+          setGroundingOpen(false);
+        }}
+      >
+        I feel a little calmer
+      </button>
+
+    </div>
+
+  </div>
+
+)}
 
       <footer className="replika-chat-input-area">
         <div className="replika-input-pill">

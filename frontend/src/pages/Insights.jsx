@@ -55,6 +55,7 @@ function Insights() {
   const [data, setData] = useState([]);
   const [trend, setTrend] = useState({});
   const [emotionalInsights, setEmotionalInsights] = useState({});
+  const [emotionTimeline, setEmotionTimeline] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -84,6 +85,16 @@ function Insights() {
       console.log("Emotional Insights:", res.data);
 
       setEmotionalInsights(res.data || {});
+      const timelineRes = await API.get(
+      "/analytics/emotion-timeline",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setEmotionTimeline(timelineRes.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -404,6 +415,151 @@ function Insights() {
   </div>
 
 </motion.section>
+  <motion.section
+    className="synth-emotion-timeline-section"
+    variants={fadeUp}
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, amount: 0.2 }}
+  >
+
+    <div className="synth-chart-header">
+
+      <div>
+        <p>Emotional memory</p>
+
+        <h2>Your emotional timeline</h2>
+
+        <span>
+          Emotional patterns, recovery phases, and emotional shifts across time.
+        </span>
+      </div>
+
+      <Brain size={20} />
+    </div>
+
+    <div className="synth-emotion-timeline">
+
+      {emotionTimeline.map((item, index) => (
+
+        <div
+          className="timeline-node-wrapper"
+          key={index}
+        >
+
+          <div className="timeline-line"></div>
+
+          <div
+            className={`timeline-node ${
+              item.riskLevel?.toLowerCase()
+            }`}
+          >
+            <div className="timeline-glow"></div>
+
+            <small>{item.date}</small>
+
+            <h3>
+              {item.dominantEmotion || "neutral"}
+            </h3>
+
+            <p>
+              Mood:
+              <strong>
+                {" "}
+                {item.mood || "Unknown"}
+              </strong>
+            </p>
+
+            <span>
+              Risk:
+              {" "}
+              {item.riskLevel || "LOW"}
+            </span>
+
+            {item.recoveryStatus && (
+              <div className="timeline-recovery">
+                Recovery:
+                {" "}
+                {item.recoveryStatus}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  </motion.section>
+  <motion.section
+    className="synth-weekly-reflection"
+    variants={fadeUp}
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, amount: 0.2 }}
+  >
+
+    <p>
+      {emotionalInsights.weeklyReflection?.title ||
+        "Weekly Reflection"}
+    </p>
+
+    <h2>
+      {emotionalInsights.weeklyReflection?.trend ||
+        "Your emotional week"}
+    </h2>
+
+    <span>
+      {emotionalInsights.weeklyReflection?.message ||
+        "Keep checking in with yourself so SynthMind can understand your emotional patterns more deeply."}
+    </span>
+    
+      </motion.section>
+
+      <motion.section
+        className="synth-heatmap-section"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+
+        <div className="synth-chart-header">
+
+          <div>
+            <p>Emotional activity</p>
+
+            <h2>Mood heatmap</h2>
+
+            <span>
+              Your emotional intensity across recent days
+            </span>
+          </div>
+
+          <Brain size={20} />
+        </div>
+
+        <div className="synth-heatmap-grid">
+
+          {(emotionalInsights.moodHeatmap || []).map(
+            (item, index) => (
+              <div
+                key={index}
+                className={`heatmap-cell ${item.intensity}`}
+                title={`${item.date} • ${item.intensity}`}
+              >
+                <small>
+                  {new Date(item.date).getDate()}
+                </small>
+              </div>
+            )
+          )}
+
+        </div>
+
+      </motion.section>
 
       <motion.section
         className="synth-insights-cards"

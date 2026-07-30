@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from collections import Counter
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from backend.models.chat import ChatHistory
-
+from backend.models.mood import Mood
+from backend.models.crisisEvent import CrisisEvent
 
 # -------------------------------
 # 🔹 GET LAST N DAYS EMOTIONS
@@ -193,3 +195,90 @@ Emotional Timeline:
 """
 
     return summary
+
+# -------------------------------
+# 🔹 BUILD VISUAL EMOTION TIMELINE
+# -------------------------------
+def buildVisualEmotionTimeline(db: Session, user_id: int):
+    chats = (
+        db.query(ChatHistory)
+        .filter(ChatHistory.user_id == user_id)
+        .order_by(ChatHistory.created_at.asc())
+        .all()
+    )
+
+    moods = (
+        db.query(Mood)
+        .filter(Mood.user_id == user_id)
+        .order_by(Mood.created_at.asc())
+        .all()
+    )
+
+    crises = (
+        db.query(CrisisEvent)
+        .filter(CrisisEvent.user_id == user_id)
+        .order_by(CrisisEvent.created_at.asc())
+        .all()
+    )
+
+    grouped = defaultdict(lambda: {
+        "date": "",
+        "dominantEmotion": "neutral",
+        "mood": None,
+        "riskLevel": "LOW",
+        "recoveryStatus": None,
+        "events": []
+    })
+
+    for chat in chats:
+        if not chat.created_at:
+            continue
+
+        dateKey = chat.created_at.strftime("%Y-%m-%d")
+        grouped[dateKey]["date"] = dateKey
+
+        if chat.emotion:
+            grouped[dateKey]["dominantEmotion"] = chat.emotion
+
+        grouped[dateKey]["events"].append({
+            "type": "chat",
+            "emotion": chat.emotion,
+            "time": str(chat.created_at)
+        })
+
+    for mood in moods:
+        if not mood.created_at:
+            continue
+
+        dateKey = mood.created_at.strftime("%Y-%m-%d")
+        grouped[dateKey]["date"] = dateKey
+        grouped[dateKey]["mood"] = mood.mood
+
+        grouped[dateKey]["events"].append({
+            "type": "mood",
+            "value": mood.mood,
+            "time": str(mood.created_at)
+        })
+
+    for crisis in crises:
+        if not crisis.created_at:
+            continue
+
+        dateKey = crisis.created_at.strftime("%Y-%m-%d")
+        grouped[dateKey]["date"] = dateKey
+        grouped[dateKey]["riskLevel"] = crisis.risk_level
+        grouped[dateKey]["recoveryStatus"] = crisis.recovery_status
+
+        grouped[dateKey]["events"].append({
+            "type": "crisis",
+            "riskLevel": crisis.risk_level,
+            "recoveryStatus": crisis.recovery_status,
+            "time": str(crisis.created_at)
+        })
+
+    timeline = sorted(
+        grouped.values(),
+        key=lambda x: x["date"]
+    )
+
+    return timeline[-30:]

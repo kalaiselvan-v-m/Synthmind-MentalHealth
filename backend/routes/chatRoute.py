@@ -7,6 +7,7 @@ from backend.schemas.chatSchema import ChatRequest
 from backend.service.chatService import process_chat, process_chat_stream
 from backend.service.llmService import streamLlamaReply
 from backend.service.memoryService import updateLongTermMemory
+from backend.service.crisisService import analyzeCrisis
 from backend.models.chat import ChatHistory
 from backend.dependencies.authDependency import getCurrentUser
 from backend.models.user import User
@@ -40,9 +41,28 @@ def chatStream(
         data.message,
         data.mode
     )
+    prepared["crisis"] = analyzeCrisis(
+        db,
+        currentUser.id,
+        data.message
+    )
 
     def eventGenerator():
         fullReply = ""
+        # -----------------------------
+        # SEND CRISIS METADATA FIRST
+        # -----------------------------
+        crisis = prepared["crisis"]
+
+        if crisis["risk_level"] in ["HIGH", "CRITICAL"]:
+            yield (
+                "__CRISIS__"
+                + str({
+                    "riskLevel": crisis["risk_level"],
+                    "response": crisis["response"]
+                })
+                + "\n"
+            )
 
         try:
             # -----------------------------
@@ -68,6 +88,15 @@ def chatStream(
         except Exception as e:
             print("STREAM ERROR:", str(e))
             yield "I’m having trouble responding right now."
+
+        # -----------------------------
+        # CRISIS ANALYSIS
+        # -----------------------------
+        crisisResult = analyzeCrisis(
+            db,
+            currentUser.id,
+            data.message
+        )
 
         # -----------------------------
         # SAVE AFTER STREAM FINISHES

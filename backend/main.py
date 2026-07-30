@@ -19,6 +19,9 @@ from backend.routes.habitSuggestionRoute import router as habit_router
 from backend.routes.habitTrackingRoute import router as habit_tracking_router
 from backend.routes.reminderRoute import router as reminder_router
 from backend.routes.emotionalInsightRoute import router as emotional_insight_router
+from backend.routes.trustedContactRoute import router as trusted_contact_router
+from backend.routes.recoveryIntelligenceRoute import router as recovery_intelligence_router
+from backend.routes.crisisSupportRoute import router as crisis_support_router
 
 from backend.models import userMemory
 from backend.models import onboarding
@@ -26,6 +29,8 @@ from backend.models import user
 from backend.models import habit
 from backend.models import crisisEvent
 from backend.models import ragMemory
+from backend.models import trustedContact
+from backend.models import crisisSupportAction
 
 from backend.utils.onboardingQuestion import seed_onboarding_questions
 
@@ -77,3 +82,6 @@ app.include_router(habit_router)
 app.include_router(habit_tracking_router)
 app.include_router(reminder_router)
 app.include_router(emotional_insight_router)
+app.include_router(trusted_contact_router)
+app.include_router(recovery_intelligence_router)
+app.include_router(crisis_support_router)

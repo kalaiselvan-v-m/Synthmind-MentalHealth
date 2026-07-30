@@ -152,6 +152,98 @@ def fallbackExtractMemory(message: str):
             "value": "User prefers shorter responses.",
             "importance": 2
         })
+        
+    # -----------------------------------
+    # COMFORT / REASSURANCE PREFERENCE
+    # -----------------------------------
+    if any(word in msg for word in [
+        "reassure me",
+        "comfort me",
+        "be comforting",
+        "stay with me",
+        "dont leave",
+        "don't leave"
+    ]):
+        memories.append({
+            "type": "preference",
+            "key": "reassurance_preference",
+            "value": (
+                "User prefers emotionally reassuring and comforting responses."
+            ),
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # DISLIKES ROBOTIC STYLE
+    # -----------------------------------
+    if any(word in msg for word in [
+        "dont sound robotic",
+        "don't sound robotic",
+        "talk naturally",
+        "be real",
+        "sound human",
+        "talk like a person"
+    ]):
+        memories.append({
+            "type": "preference",
+            "key": "human_style_preference",
+            "value": (
+                "User prefers natural emotionally human conversation."
+            ),
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # FEWER QUESTIONS
+    # -----------------------------------
+    if any(word in msg for word in [
+        "stop asking questions",
+        "too many questions",
+        "dont ask too much",
+        "don't ask too much"
+    ]):
+        memories.append({
+            "type": "preference",
+            "key": "low_question_preference",
+            "value": (
+                "User prefers fewer reflective questions during support."
+            ),
+            "importance": 3
+        })
+
+    # -----------------------------------
+    # MOTIVATIONAL STYLE
+    # -----------------------------------
+    if any(word in msg for word in [
+        "motivate me",
+        "push me",
+        "encourage me"
+    ]):
+        memories.append({
+            "type": "preference",
+            "key": "motivation_preference",
+            "value": (
+                "User sometimes prefers motivating and encouraging responses."
+            ),
+            "importance": 2
+        })
+
+    # -----------------------------------
+    # GROUNDING STYLE
+    # -----------------------------------
+    if any(word in msg for word in [
+        "help me calm down",
+        "ground me",
+        "slow things down"
+    ]):
+        memories.append({
+            "type": "preference",
+            "key": "grounding_preference",
+            "value": (
+                "User responds well to grounding and calming emotional support."
+            ),
+            "importance": 3
+        })
 
     return memories
 
