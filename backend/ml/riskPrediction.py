@@ -1,51 +1,16 @@
-import os
-import joblib
-import pandas as pd
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "ml", "risk.pkl")
+"""
+SynthMind risk prediction.
 
-model = None
+The current training dataset is too small for reliable ML predictions.
+Until a sufficiently validated model is available, return Unavailable.
+The rule-based risk assessment remains active in riskService.py.
+"""
 
-
-def loadRiskModel():
-    global model
-
-    if model is None:
-        model = joblib.load(MODEL_PATH)
-
-    return model
-
-
-def predictRiskML(stress_score, support_level, low_mood_count, negative_emotion_count):
-    riskModel = loadRiskModel()
-
-    support_map = {
-        "low": 0,
-        "medium": 1,
-        "high": 2,
-        "Low support system": 0,
-        "Moderate support system": 1,
-        "Good support system": 2,
-    }
-
-    support_value = support_map.get(support_level, 1)
-
-    X = pd.DataFrame(
-        [{
-            "stress_score": stress_score,
-            "support_level": support_value,
-            "low_mood_count": low_mood_count,
-            "negative_emotion_count": negative_emotion_count,
-        }]
-    )
-
-    prediction = riskModel.predict(X)[0]
-
-    label_map = {
-        0: "Low",
-        1: "Medium",
-        2: "High",
-    }
-
-    return label_map.get(int(prediction), "Low")
+def predictRiskML(
+    stress_score,
+    support_level,
+    low_mood_count,
+    negative_emotion_count
+):
+    return "Unavailable"

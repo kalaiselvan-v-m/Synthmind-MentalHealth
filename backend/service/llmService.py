@@ -8,8 +8,7 @@ client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-MODEL_NAME = "llama-3.3-70b-versatile"
-
+MODEL_NAME = "openai/gpt-oss-20b"
 
 def isCrisis(message: str):
     crisisWords = [
@@ -22,11 +21,8 @@ def isCrisis(message: str):
         "i want to die",
         "i don't want to live",
     ]
-
     msg = message.lower()
-
     return any(word in msg for word in crisisWords)
-
 
 def cleanReply(reply: str):
     bannedStarts = [

@@ -359,16 +359,42 @@ RULES:
         "personalityStyle": personalityStyle
     }
 
-def process_chat(db: Session, user_id: int, message: str, mode: str):
-    crisis = analyzeCrisis(db, user_id, message)
 
-    if crisis["risk_level"] in ["HIGH", "CRITICAL"]:
+def process_chat(db: Session, user_id: int, message: str, mode: str):
+
+    # Analyze crisis before normal chatbot processing.
+    crisis = analyzeCrisis(
+        db,
+        user_id,
+        message
+    )
+
+    # Dedicated support response for medium, high and critical.
+    if crisis["risk_level"] in [
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+    ]:
+
+        is_severe = crisis["risk_level"] in [
+            "HIGH",
+            "CRITICAL"
+        ]
+
         chat = ChatHistory(
             user_id=user_id,
             message=message,
             response=crisis["response"],
-            mode="crisis",
-            emotion="crisis",
+            mode=(
+                "crisis"
+                if is_severe
+                else "emotional_support"
+            ),
+            emotion=(
+                "crisis"
+                if is_severe
+                else "distress"
+            ),
             confidence="1.0"
         )
 
@@ -378,13 +404,22 @@ def process_chat(db: Session, user_id: int, message: str, mode: str):
 
         return {
             "reply": crisis["response"],
-            "emotion": "crisis",
+            "emotion": (
+                "crisis"
+                if is_severe
+                else "distress"
+            ),
             "riskLevel": crisis["risk_level"],
-            "crisisDetected": True,
+            "crisisDetected": crisis["crisis_detected"],
             "reason": crisis["reason"]
         }
 
-    prepared = prepareChatContext(db, user_id, message)
+    # Normal chatbot processing for LOW risk.
+    prepared = prepareChatContext(
+        db,
+        user_id,
+        message
+    )
 
     reply = generateLlamaReply(
         message=message,
@@ -402,18 +437,25 @@ def process_chat(db: Session, user_id: int, message: str, mode: str):
         response=reply,
         mode=prepared["brain"]["intent"],
         emotion=prepared["emotionData"]["topEmotion"],
-        confidence=str(prepared["emotionData"]["confidence"])
+        confidence=str(
+            prepared["emotionData"]["confidence"]
+        )
     )
 
     db.add(chat)
     db.commit()
     db.refresh(chat)
 
-    updateLongTermMemory(db, user_id, message)
+    updateLongTermMemory(
+        db,
+        user_id,
+        message
+    )
+
     saveRagMemory(
-    db,
-    user_id,
-    f"""
+        db,
+        user_id,
+        f"""
 User message:
 {message}
 
@@ -423,8 +465,9 @@ Emotion:
 Risk:
 {prepared['riskLevel']}
 """,
-    prepared["emotionData"]["topEmotion"]
-)
+        prepared["emotionData"]["topEmotion"]
+    )
+
     decayMemories(db, user_id)
 
     return {
@@ -434,6 +477,7 @@ Risk:
         "personalityStyle": prepared["personalityStyle"],
         "crisisDetected": False
     }
+
 
 
 def process_chat_stream(db: Session, user_id: int, message: str, mode: str):

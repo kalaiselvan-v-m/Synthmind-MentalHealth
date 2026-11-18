@@ -179,41 +179,120 @@ function Chat() {
     });
   };
 
-  const sendMessage = async () => {
-    if (!message.trim() || loading) return;
+  
+const sendMessage = async () => {
+  if (!message.trim() || loading) return;
 
-    if (!token) {
-      alert("Please login first");
+  if (!token) {
+    alert("Please login first");
+    return;
+  }
+
+  const currentMessage = message.trim();
+  const now = new Date().toISOString();
+
+  setMessage("");
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      sender: "user",
+      text: currentMessage,
+      streaming: false,
+      timestamp: now,
+    },
+    {
+      sender: "ai",
+      text: "",
+      streaming: true,
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+
+  setLoading(true);
+
+  let aiText = "";
+  let buffer = "";
+  const marker = "__CRISIS__";
+
+  const showCrisis = (data) => {
+    const level = data.riskLevel || "MEDIUM";
+    const responseText = data.response || "";
+
+    setCrisisState({
+      visible: true,
+      riskLevel: level,
+      response: responseText,
+    });
+
+    aiText = responseText;
+    updateLastAiMessage(responseText, false);
+  };
+
+  const addNormalText = async (text) => {
+    if (!text) return;
+
+    for (const char of text) {
+      aiText += char;
+      updateLastAiMessage(aiText, true);
+      await new Promise((resolve) => setTimeout(resolve, 8));
+    }
+  };
+
+  const processBuffer = async (final = false) => {
+    // Wait until the complete crisis marker arrives.
+    if (
+      !final &&
+      marker.startsWith(buffer) &&
+      buffer.length < marker.length
+    ) {
       return;
     }
 
-    const currentMessage = message.trim();
-    const now = new Date().toISOString();
+    if (buffer.startsWith(marker)) {
+      const newlineIndex = buffer.indexOf("\n");
 
-    setMessage("");
+      if (newlineIndex === -1 && !final) return;
 
-    setMessages((prev) => [
-      ...prev,
+      const endIndex =
+        newlineIndex === -1 ? buffer.length : newlineIndex;
+
+      const jsonText = buffer
+        .slice(marker.length, endIndex)
+        .trim();
+
+      buffer =
+        newlineIndex === -1
+          ? ""
+          : buffer.slice(newlineIndex + 1);
+
+      try {
+        const crisisData = JSON.parse(jsonText);
+        showCrisis(crisisData);
+      } catch (error) {
+        console.error("Crisis metadata parsing error:", error);
+      }
+
+      if (buffer) {
+        const remaining = buffer;
+        buffer = "";
+        await addNormalText(remaining);
+      }
+
+      return;
+    }
+
+    if (buffer) {
+      const remaining = buffer;
+      buffer = "";
+      await addNormalText(remaining);
+    }
+  };
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/chat/stream",
       {
-        sender: "user",
-        text: currentMessage,
-        streaming: false,
-        timestamp: now,
-      },
-      {
-        sender: "ai",
-        text: "",
-        streaming: true,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-
-    setLoading(true);
-
-    let aiText = "";
-
-    try {
-      const response = await fetch("http://127.0.0.1:8000/chat/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -223,98 +302,47 @@ function Chat() {
           message: currentMessage,
           mode: "guidance",
         }),
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error("Chat stream failed");
       }
+    );
 
-      const riskCheck = await fetch(
-  "http://127.0.0.1:8000/chat/latest-meta",
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
-
-const riskData = await riskCheck.json();
-
-if (
-  riskData.riskLevel === "HIGH" ||
-  riskData.riskLevel === "CRITICAL"
-) {
-  setCrisisState({
-    visible: true,
-    riskLevel: riskData.riskLevel,
-    response:
-      riskData.riskLevel === "CRITICAL"
-        ? "You seem like you may be in a really heavy moment right now."
-        : "You seem emotionally overwhelmed right now.",
-  });
-}
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      while (true) {
-        const { value, done } = await reader.read();
-
-        if (done) {
-          updateLastAiMessage(
-            aiText.trim() || "I’m here. say that again once?",
-            false
-          );
-          setLoading(false);
-          break;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
-
-        if (chunk.startsWith("__CRISIS__")) {
-
-          try {
-            const jsonText = chunk
-              .replace("__CRISIS__", "")
-              .trim();
-
-            const crisisData = JSON.parse(
-              jsonText.replaceAll("'", '"')
-            );
-
-            setCrisisState({
-              visible: true,
-              riskLevel: crisisData.riskLevel,
-              response: crisisData.response,
-            });
-
-          } catch (err) {
-            console.error("Crisis parse error:", err);
-          }
-
-          continue;
-        }
-
-        if (!chunk) continue;
-
-        for (let char of chunk) {
-          aiText += char;
-          updateLastAiMessage(aiText, true);
-
-          await new Promise((resolve) => setTimeout(resolve, 8));
-        }
-      }
-    } catch (err) {
-      console.error(err);
-
-      updateLastAiMessage(
-        "I’m having trouble connecting right now. Please try again.",
-        false
-      );
-
-      setLoading(false);
+    if (!response.ok || !response.body) {
+      throw new Error("Chat stream failed");
     }
-  };
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      await processBuffer(false);
+    }
+
+    buffer += decoder.decode();
+
+    await processBuffer(true);
+
+    updateLastAiMessage(
+      aiText.trim() || "I'm here. Tell me a little more.",
+      false
+    );
+
+  } catch (error) {
+    console.error("Chat error:", error);
+
+    updateLastAiMessage(
+      "I'm having trouble connecting right now. Please try again.",
+      false
+    );
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const clearLocalChat = async () => {
     try {
@@ -411,7 +439,9 @@ if (
     <h3>
       {crisisState.riskLevel === "CRITICAL"
         ? "Stay with us for a second."
-        : "You don’t have to carry this alone."}
+        : crisisState.riskLevel === "HIGH"
+        ? "You don’t have to carry this alone."
+        : "Let's take this one step at a time."}
     </h3>
 
     <p>

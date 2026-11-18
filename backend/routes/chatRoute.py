@@ -1,3 +1,6 @@
+
+import json
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -41,90 +44,112 @@ def chatStream(
         data.message,
         data.mode
     )
-    prepared["crisis"] = analyzeCrisis(
+
+    # Analyze the current message exactly once.
+    crisis = analyzeCrisis(
         db,
         currentUser.id,
         data.message
     )
 
     def eventGenerator():
+
         fullReply = ""
-        # -----------------------------
-        # SEND CRISIS METADATA FIRST
-        # -----------------------------
-        crisis = prepared["crisis"]
 
-        if crisis["risk_level"] in ["HIGH", "CRITICAL"]:
-            yield (
-                "__CRISIS__"
-                + str({
-                    "riskLevel": crisis["risk_level"],
-                    "response": crisis["response"]
-                })
-                + "\n"
-            )
+        # MEDIUM, HIGH and CRITICAL messages receive
+        # their dedicated support response.
+        if crisis["risk_level"] in [
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+        ]:
 
+            crisisPayload = {
+                "riskLevel": crisis["risk_level"],
+                "crisisDetected": crisis["crisis_detected"],
+                "response": crisis["response"]
+            }
+
+            yield "__CRISIS__" + json.dumps(crisisPayload) + "\n"
+
+            fullReply = crisis["response"]
+
+        else:
+
+            # Normal conversation: stream the AI response.
+            try:
+                for chunk in streamLlamaReply(
+                    message=data.message,
+                    emotion=prepared["emotionData"]["topEmotion"],
+                    intensity=prepared["emotionIntensity"],
+                    memory=prepared["memory"],
+                    risk=prepared["riskLevel"],
+                    brain=prepared["brain"],
+                    escalate=prepared["escalate"]
+                ):
+                    fullReply += chunk
+                    yield chunk
+
+            except Exception as error:
+                print("STREAM ERROR:", str(error))
+
+                fullReply = (
+                    "I'm having trouble responding right now. "
+                    "Please try again."
+                )
+
+                yield fullReply
+
+        # Save the chat once, after generating its response.
         try:
-            # -----------------------------
-            # STREAM AI RESPONSE
-            # -----------------------------
-            for chunk in streamLlamaReply(
-                message=data.message,
-                emotion=prepared["emotionData"]["topEmotion"],
-                intensity=prepared["emotionIntensity"],
-                memory=prepared["memory"],
-                risk=prepared["riskLevel"],
-                brain=prepared["brain"],
-                escalate=prepared["escalate"]
-            ):
-                fullReply += chunk
-                yield chunk
-
-            # -----------------------------
-            # FORCE STREAM CLOSE FAST
-            # -----------------------------
-            yield ""
-
-        except Exception as e:
-            print("STREAM ERROR:", str(e))
-            yield "I’m having trouble responding right now."
-
-        # -----------------------------
-        # CRISIS ANALYSIS
-        # -----------------------------
-        crisisResult = analyzeCrisis(
-            db,
-            currentUser.id,
-            data.message
-        )
-
-        # -----------------------------
-        # SAVE AFTER STREAM FINISHES
-        # -----------------------------
-        try:
-            chat = ChatHistory(
+            chatRecord = ChatHistory(
                 user_id=currentUser.id,
                 message=data.message,
                 response=fullReply,
-                mode=prepared["brain"]["intent"],
-                emotion=prepared["emotionData"]["topEmotion"],
-                confidence=str(
-                    prepared["emotionData"]["confidence"]
+                mode=(
+                    "crisis"
+                    if crisis["risk_level"] in [
+                        "HIGH",
+                        "CRITICAL"
+                    ]
+                    else (
+                        "emotional_support"
+                        if crisis["risk_level"] == "MEDIUM"
+                        else prepared["brain"]["intent"]
+                    )
+                ),
+                emotion=(
+                    "crisis"
+                    if crisis["risk_level"] in [
+                        "HIGH",
+                        "CRITICAL"
+                    ]
+                    else prepared["emotionData"]["topEmotion"]
+                ),
+                confidence=(
+                    "1.0"
+                    if crisis["risk_level"] in [
+                        "MEDIUM",
+                        "HIGH",
+                        "CRITICAL"
+                    ]
+                    else str(prepared["emotionData"]["confidence"])
                 )
             )
 
-            db.add(chat)
+            db.add(chatRecord)
             db.commit()
 
-            # lightweight memory update
-            updateLongTermMemory(
-                db,
-                currentUser.id,
-                data.message
-            )
+            if crisis["risk_level"] == "LOW":
+                updateLongTermMemory(
+                    db,
+                    currentUser.id,
+                    data.message
+                )
 
-        except Exception as e:
-            print("POST STREAM SAVE ERROR:", str(e))
+        except Exception as error:
+            db.rollback()
+            print("POST STREAM SAVE ERROR:", str(error))
 
     return StreamingResponse(
         eventGenerator(),
@@ -137,6 +162,7 @@ def getLatestChatMeta(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
+
     chat = (
         db.query(ChatHistory)
         .filter(ChatHistory.user_id == currentUser.id)
@@ -172,6 +198,7 @@ def get_chat_history(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
+
     return (
         db.query(ChatHistory)
         .filter(ChatHistory.user_id == currentUser.id)
@@ -185,6 +212,7 @@ def delete_history(
     db: Session = Depends(get_db),
     currentUser: User = Depends(getCurrentUser)
 ):
+
     db.query(ChatHistory).filter(
         ChatHistory.user_id == currentUser.id
     ).delete()

@@ -97,7 +97,7 @@ function Journal() {
         </h1>
 
         <small>
-          Use this space to release thoughts, track emotions, and let SynthMind
+          Use this space to release thoughts, track emotions, and let Campuswell
           reflect back gentle insights from your writing.
         </small>
       </motion.section>
@@ -208,7 +208,7 @@ function Journal() {
                 <strong>AI Insight</strong>
               </div>
 
-              <p>{entry.ai_summary || "SynthMind is still learning from this entry."}</p>
+              <p>{entry.ai_summary || "Campuswell is still learning from this entry."}</p>
             </div>
           </motion.article>
         ))}

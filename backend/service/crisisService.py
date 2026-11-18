@@ -1,4 +1,6 @@
+
 from sqlalchemy.orm import Session
+
 from backend.models.crisisEvent import CrisisEvent
 from backend.models.chat import ChatHistory
 
@@ -36,43 +38,65 @@ MEDIUM_RISK_PHRASES = [
     "too much pressure"
 ]
 
-NEGATIVE_EMOTIONS = ["fear", "sadness", "grief", "nervousness", "anger"]
+NEGATIVE_EMOTIONS = [
+    "fear",
+    "sadness",
+    "grief",
+    "nervousness",
+    "anger"
+]
 
 
 def classifyCrisis(message: str, recent_negative_count: int = 0):
-    msg = message.lower()
 
+    msg = message.lower().strip()
+
+    # 1. Critical risk
     for phrase in CRITICAL_PHRASES:
+
         if phrase in msg:
             return {
                 "crisis_detected": True,
                 "risk_level": "CRITICAL",
-                "reason": f"Critical self-harm phrase detected: {phrase}"
+                "reason": (
+                    f"Critical self-harm phrase detected: {phrase}"
+                )
             }
 
+    # 2. High risk
     for phrase in HIGH_RISK_PHRASES:
+
         if phrase in msg:
             return {
                 "crisis_detected": True,
                 "risk_level": "HIGH",
-                "reason": f"High-risk hopelessness phrase detected: {phrase}"
+                "reason": (
+                    f"High-risk hopelessness phrase detected: {phrase}"
+                )
             }
 
+    # 3. Medium distress
     for phrase in MEDIUM_RISK_PHRASES:
+
         if phrase in msg:
             return {
-                "crisis_detected": True,
+                "crisis_detected": False,
                 "risk_level": "MEDIUM",
-                "reason": f"Medium distress phrase detected: {phrase}"
+                "reason": (
+                    f"Medium distress phrase detected: {phrase}"
+                )
             }
 
+    # 4. Repeated negative emotional history
     if recent_negative_count >= 4:
+
         return {
             "crisis_detected": False,
             "risk_level": "MEDIUM",
             "reason": "Repeated recent negative emotions"
         }
 
+    # 5. Normal condition
     return {
         "crisis_detected": False,
         "risk_level": "LOW",
@@ -80,7 +104,12 @@ def classifyCrisis(message: str, recent_negative_count: int = 0):
     }
 
 
-def getRecentNegativeCount(db: Session, user_id: int, limit: int = 8):
+def getRecentNegativeCount(
+    db: Session,
+    user_id: int,
+    limit: int = 8
+):
+
     chats = (
         db.query(ChatHistory)
         .filter(ChatHistory.user_id == user_id)
@@ -89,39 +118,70 @@ def getRecentNegativeCount(db: Session, user_id: int, limit: int = 8):
         .all()
     )
 
-    return sum(1 for chat in chats if chat.emotion in NEGATIVE_EMOTIONS)
+    return sum(
+        1 for chat in chats
+        if chat.emotion in NEGATIVE_EMOTIONS
+    )
 
 
 def buildCrisisResponse(risk_level: str):
+
     if risk_level == "CRITICAL":
+
         return (
-            "I’m really sorry you’re feeling this much pain. "
-            "Please contact someone you trust right now, or reach emergency support in your area immediately. "
-            "You don’t have to handle this alone. Stay where you are safe and message or call someone nearby now."
+            "I'm really sorry you're experiencing this. "
+            "Please contact someone you trust right now "
+            "and seek immediate emergency support if you may "
+            "act on these thoughts. Stay with a trusted person "
+            "and move away from anything you could use to hurt yourself."
         )
 
     if risk_level == "HIGH":
+
         return (
-            "I’m here with you. This sounds really heavy, and you shouldn’t have to carry it alone. "
-            "Please reach out to someone you trust today. For now, stay close to a safe person or safe place."
+            "I'm here to listen. This sounds very difficult. "
+            "Please reach out to someone you trust today. "
+            "You do not have to manage this alone."
         )
 
     if risk_level == "MEDIUM":
+
         return (
-            "That sounds intense. Let’s slow it down for a moment. "
-            "Take one breath, relax your shoulders, and focus only on the next small step."
+            "It sounds like you're under pressure. "
+            "Let's slow down for a moment. Take a gentle breath "
+            "and focus on one manageable next step."
         )
 
     return ""
 
 
-def analyzeCrisis(db: Session, user_id: int, message: str):
-    recent_negative_count = getRecentNegativeCount(db, user_id)
-    result = classifyCrisis(message, recent_negative_count)
+def analyzeCrisis(
+    db: Session,
+    user_id: int,
+    message: str
+):
 
-    response = buildCrisisResponse(result["risk_level"])
+    recent_negative_count = getRecentNegativeCount(
+        db,
+        user_id
+    )
 
-    if result["risk_level"] in ["MEDIUM", "HIGH", "CRITICAL"]:
+    result = classifyCrisis(
+        message,
+        recent_negative_count
+    )
+
+    response = buildCrisisResponse(
+        result["risk_level"]
+    )
+
+    # Save medium, high and critical support events.
+    if result["risk_level"] in [
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+    ]:
+
         event = CrisisEvent(
             user_id=user_id,
             message=message,

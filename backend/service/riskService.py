@@ -1,4 +1,6 @@
+
 from sqlalchemy.orm import Session
+
 from backend.models.mood import Mood
 from backend.models.chat import ChatHistory
 from backend.models.onboarding import UserMentalProfile
@@ -6,14 +8,41 @@ from backend.ml.riskPrediction import predictRiskML
 
 
 negativeEmotions = [
-    "sadness", "grief", "fear", "nervousness",
-    "remorse", "disappointment", "anger"
+    "sadness",
+    "grief",
+    "fear",
+    "nervousness",
+    "remorse",
+    "disappointment",
+    "anger"
 ]
 
 lowMoods = ["Low", "Overwhelmed"]
 
 
+def combineRiskLevels(rule_level: str, ml_risk: str) -> str:
+    """
+    Combine rule-based and ML predictions.
+    ML must never downgrade a higher rule-based risk.
+    """
+
+    risk_order = {
+        "Low": 0,
+        "Medium": 1,
+        "High": 2
+    }
+
+    valid_rule = rule_level if rule_level in risk_order else "Low"
+    valid_ml = ml_risk if ml_risk in risk_order else "Low"
+
+    return max(
+        (valid_rule, valid_ml),
+        key=lambda level: risk_order[level]
+    )
+
+
 def calculateRiskScore(db: Session, user_id: int):
+
     score = 0
     reasons = []
 
@@ -28,18 +57,28 @@ def calculateRiskScore(db: Session, user_id: int):
     support_level = "medium"
 
     if profile:
-        stress_score = profile.stress_score if profile.stress_score else 50
-        support_level = profile.support_level if profile.support_level else "medium"
+
+        stress_score = (
+            profile.stress_score
+            if profile.stress_score is not None
+            else 50
+        )
+
+        support_level = (
+            profile.support_level
+            if profile.support_level
+            else "medium"
+        )
 
         if profile.risk_level == "High":
             score += 30
             reasons.append("High onboarding risk profile")
 
-        if profile.stress_score and profile.stress_score >= 70:
+        if stress_score >= 70:
             score += 25
             reasons.append("High stress score from onboarding")
 
-        if profile.support_level == "Low support system":
+        if support_level == "Low support system":
             score += 20
             reasons.append("Low support system")
 
@@ -52,7 +91,10 @@ def calculateRiskScore(db: Session, user_id: int):
         .all()
     )
 
-    lowMoodCount = sum(1 for mood in moods if mood.mood in lowMoods)
+    lowMoodCount = sum(
+        1 for mood in moods
+        if mood.mood in lowMoods
+    )
 
     if lowMoodCount >= 3:
         score += 25
@@ -72,7 +114,8 @@ def calculateRiskScore(db: Session, user_id: int):
     )
 
     negativeEmotionCount = sum(
-        1 for chat in chats if chat.emotion in negativeEmotions
+        1 for chat in chats
+        if chat.emotion in negativeEmotions
     )
 
     if negativeEmotionCount >= 5:
@@ -85,23 +128,33 @@ def calculateRiskScore(db: Session, user_id: int):
 
     score = min(score, 100)
 
+    # 4. Rule-based risk classification
     if score >= 70:
         rule_level = "High"
+
     elif score >= 40:
         rule_level = "Medium"
+
     else:
         rule_level = "Low"
 
-    # 🔥 ML PREDICTION (NEW)
-    ml_risk = predictRiskML(
-        stress_score,
-        support_level,
-        lowMoodCount,
-        negativeEmotionCount
-    )
+    # 5. ML prediction
+    try:
+        ml_risk = predictRiskML(
+            stress_score,
+            support_level,
+            lowMoodCount,
+            negativeEmotionCount
+        )
+    except Exception as error:
+        print("ML prediction error:", error)
+        ml_risk = "Unavailable"
 
-    # 🔥 FINAL DECISION (combine both)
-    final_risk = ml_risk  # you can later refine
+    # 6. Final risk decision
+    final_risk = combineRiskLevels(
+        rule_level,
+        ml_risk
+    )
 
     return {
         "user_id": user_id,
@@ -110,5 +163,8 @@ def calculateRiskScore(db: Session, user_id: int):
         "ml_risk": ml_risk,
         "final_risk": final_risk,
         "reasons": reasons,
-        "note": "AI-assisted risk prediction (not a medical diagnosis)"
+        "note": (
+            "AI-assisted risk assessment. "
+            "This is not a medical diagnosis."
+        )
     }
