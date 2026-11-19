@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { Brain, TrendingUp, HeartPulse, NotebookText } from "lucide-react";
 
@@ -11,7 +12,7 @@ function EmotionalInsights() {
 
   const fetchInsights = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/emotional-insights", {
+      const res = await fetch(`${API_BASE_URL}/emotional-insights`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

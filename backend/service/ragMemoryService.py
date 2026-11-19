@@ -1,4 +1,3 @@
-from sentence_transformers import SentenceTransformer
 import numpy as np
 
 from sqlalchemy.orm import Session
@@ -28,6 +27,7 @@ def loadEmbeddingModel():
     global model
 
     if model is None:
+        from sentence_transformers import SentenceTransformer
         model = SentenceTransformer("all-MiniLM-L6-v2")
 
     return model
@@ -111,7 +111,11 @@ def saveRagMemory(
     if not shouldSaveMemory(text, importance):
         return
 
-    embedding = createEmbedding(text)
+    try:
+        embedding = createEmbedding(text)
+    except Exception as error:
+        print("RAG MEMORY EMBEDDING UNAVAILABLE:", str(error))
+        return
 
     memory = RagMemory(
         user_id=user_id,
@@ -143,7 +147,11 @@ def searchRagMemory(
     if not memories:
         return ""
 
-    queryEmbedding = createEmbedding(query)
+    try:
+        queryEmbedding = createEmbedding(query)
+    except Exception as error:
+        print("RAG MEMORY SEARCH UNAVAILABLE:", str(error))
+        return ""
 
     scored = []
 

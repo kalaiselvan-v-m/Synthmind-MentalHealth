@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import skyVideo from "../assets/videos/sky.mp4";
+import API from "../api/api";
 
 function Register() {
   const navigate = useNavigate();
@@ -20,30 +21,16 @@ function Register() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.detail || "Register failed");
-        setLoading(false);
-        return;
-      }
-
+      const res = await API.post("/auth/register", form);
+      const data = res.data;
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data));
-
       navigate("/onboarding");
     } catch (err) {
-      console.error(err);
-      setError("Backend connection failed");
+      setError(err.response?.data?.detail || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -113,7 +100,9 @@ function Register() {
             <input
               name="password"
               type="password"
-              placeholder="Create password"
+              placeholder="Create password (minimum 8 characters)"
+              minLength={8}
+              maxLength={72}
               value={form.password}
               onChange={handleChange}
               required

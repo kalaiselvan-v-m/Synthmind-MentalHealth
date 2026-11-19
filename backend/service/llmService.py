@@ -1,14 +1,8 @@
-import os
-from groq import Groq
-from dotenv import load_dotenv
+import json
+import requests
 
-load_dotenv(dotenv_path="backend/.env")
+from backend.config.settings import OLLAMA_API_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT_SECONDS
 
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
-
-MODEL_NAME = "openai/gpt-oss-20b"
 
 def isCrisis(message: str):
     crisisWords = [
@@ -254,6 +248,21 @@ MEMORY:
 """
 
 
+def _ollama_request(messages, stream=False):
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": messages,
+        "stream": stream,
+        "options": {"temperature": 0.7},
+    }
+    return requests.post(
+        OLLAMA_API_URL,
+        json=payload,
+        stream=stream,
+        timeout=(5, OLLAMA_TIMEOUT_SECONDS),
+    )
+
+
 def generateLlamaReply(
     message: str,
     emotion: str,
@@ -265,52 +274,36 @@ def generateLlamaReply(
 ):
     if isCrisis(message):
         return (
-            "I’m really sorry you’re feeling this way. "
-            "Please reach out to someone you trust or a professional right now."
+            "I'm sorry you're facing this. Please contact someone you trust "
+            "now and seek immediate local emergency help if you may be in danger."
         )
 
-    if brain is None:
-        brain = {}
-
+    brain = brain or {}
     if not brain.get("useMemory", True):
         memory = ""
-
-    memory = memory[-1200:]
-
     systemPrompt = buildSystemPrompt(
         emotion=emotion,
         intensity=intensity,
         risk=risk,
-        memory=memory,
+        memory=memory[-1200:],
         brain=brain,
         escalate=escalate,
     )
 
     try:
-        completion = client.chat.completions.create(
-            model=MODEL_NAME,
-            temperature=0.82,
-            max_tokens=160,
-            messages=[
-                {
-                    "role": "system",
-                    "content": systemPrompt
-                },
-                {
-                    "role": "user",
-                    "content": message
-                }
+        response = _ollama_request(
+            [
+                {"role": "system", "content": systemPrompt},
+                {"role": "user", "content": message},
             ]
         )
-
-        reply = completion.choices[0].message.content
-
-        return cleanReply(reply)
-
-    except Exception as e:
-        print("GROQ ERROR:", str(e))
-
-        return "I’m having trouble responding right now."
+        response.raise_for_status()
+        reply = response.json().get("message", {}).get("content", "")
+        reply = reply if isinstance(reply, str) else ""
+        return cleanReply(reply) if reply.strip() else "I'm having trouble responding right now."
+    except (requests.RequestException, ValueError, KeyError) as error:
+        print("OLLAMA CHAT ERROR:", str(error))
+        return "I'm having trouble responding right now. Please try again in a moment."
 
 
 def streamLlamaReply(
@@ -324,110 +317,75 @@ def streamLlamaReply(
 ):
     if isCrisis(message):
         yield (
-            "I’m really sorry you’re feeling this way. "
-            "Please reach out to someone you trust right now."
+            "I'm sorry you're facing this. Please contact someone you trust "
+            "now and seek immediate local emergency help if you may be in danger."
         )
-
         return
 
-    if brain is None:
-        brain = {}
-
+    brain = brain or {}
     if not brain.get("useMemory", True):
         memory = ""
-
-    memory = memory[-1200:]
-
     systemPrompt = buildSystemPrompt(
         emotion=emotion,
         intensity=intensity,
         risk=risk,
-        memory=memory,
+        memory=memory[-1200:],
         brain=brain,
         escalate=escalate,
     )
 
     try:
-        stream = client.chat.completions.create(
-            model=MODEL_NAME,
-            temperature=0.82,
-            max_tokens=120,
+        response = _ollama_request(
+            [
+                {"role": "system", "content": systemPrompt},
+                {"role": "user", "content": message},
+            ],
             stream=True,
-            messages=[
-                {
-                    "role": "system",
-                    "content": systemPrompt
-                },
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ]
         )
-
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-
-            if content:
-                yield content
-
-    except Exception as e:
-        print("STREAM ERROR:", str(e))
-
-        yield "I’m having trouble responding right now."
+        response.raise_for_status()
+        for line in response.iter_lines(decode_unicode=True):
+            if not line:
+                continue
+            try:
+                item = json.loads(line)
+                content = item.get("message", {}).get("content", "")
+                if content:
+                    yield content
+                if item.get("done"):
+                    break
+            except (json.JSONDecodeError, AttributeError):
+                continue
+    except requests.RequestException as error:
+        print("OLLAMA STREAM ERROR:", str(error))
+        yield "I'm having trouble responding right now. Please try again in a moment."
 
 
 def generateJournalInsight(
     content: str,
     emotion: str,
-    memory: str = ""
+    memory: str = "",
 ):
     try:
-        completion = client.chat.completions.create(
-            model=MODEL_NAME,
-            temperature=0.55,
-            max_tokens=160,
-            messages=[
+        response = _ollama_request(
+            [
                 {
                     "role": "system",
-                    "content": """
-You are SynthMind's reflective journal companion.
-
-Rules:
-- emotionally gentle
-- reflective
-- calm
-- human
-- grounded
-- emotionally intelligent
-- subtle emotional warmth
-- avoid diagnosis
-- avoid sounding robotic
-- avoid motivational speeches
-- keep responses natural and emotionally safe
-"""
+                    "content": (
+                        "You are SynthMind's reflective journal companion. "
+                        "Be emotionally gentle, calm, grounded and concise. "
+                        "Do not diagnose, invent facts, or give clinical claims."
+                    ),
                 },
                 {
                     "role": "user",
-                    "content": f"""
-Journal:
-{content}
-
-Emotion:
-{emotion}
-
-Memory:
-{memory}
-"""
-                }
+                    "content": f"Journal:\n{content}\n\nEmotion: {emotion}\n\nContext: {memory}",
+                },
             ]
         )
-
-        reply = completion.choices[0].message.content
-
-        return cleanReply(reply)
-
-    except Exception as e:
-        print("JOURNAL ERROR:", str(e))
-
-        return "That feels emotionally important somehow."
+        response.raise_for_status()
+        reply = response.json().get("message", {}).get("content", "")
+        reply = reply if isinstance(reply, str) else ""
+        return cleanReply(reply) if reply.strip() else "Thank you for taking time to reflect."
+    except (requests.RequestException, ValueError, KeyError) as error:
+        print("OLLAMA JOURNAL ERROR:", str(error))
+        return "Thank you for taking time to reflect. Your entry has been saved."

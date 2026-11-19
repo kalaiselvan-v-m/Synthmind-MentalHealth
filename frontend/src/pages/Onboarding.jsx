@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -30,7 +31,7 @@ function Onboarding() {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/onboarding/questions");
+      const res = await fetch(`${API_BASE_URL}/onboarding/questions`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -82,7 +83,7 @@ function Onboarding() {
     setSaving(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/onboarding/answer", {
+      const res = await fetch(`${API_BASE_URL}/onboarding/answer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +116,7 @@ function Onboarding() {
 
   const completeOnboarding = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/onboarding/complete", {
+      const res = await fetch(`${API_BASE_URL}/onboarding/complete`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -64,7 +64,7 @@ function Insights() {
 
   const fetchData = async () => {
     try {
-      const res = await API.get("/analytics/timeline/");
+      const res = await API.get("/analytics/timeline");
 
       setData(res.data.timeline || []);
       setTrend(res.data.trend_analysis || {});

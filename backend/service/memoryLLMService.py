@@ -2,8 +2,7 @@ import requests
 import json
 import re
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL_NAME = "llama3.2:1b"
+from backend.config.settings import OLLAMA_API_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT_SECONDS
 
 
 # -----------------------------------
@@ -273,7 +272,7 @@ Now extract memory from the USER MESSAGE.
 """
 
     payload = {
-        "model": MODEL_NAME,
+        "model": OLLAMA_MODEL,
         "messages": [
             {
                 "role": "user",
@@ -285,11 +284,12 @@ Now extract memory from the USER MESSAGE.
 
     try:
         res = requests.post(
-            OLLAMA_URL,
+            OLLAMA_API_URL,
             json=payload,
-            timeout=60
+            timeout=(5, OLLAMA_TIMEOUT_SECONDS)
         )
 
+        res.raise_for_status()
         data = res.json()
 
         content = (

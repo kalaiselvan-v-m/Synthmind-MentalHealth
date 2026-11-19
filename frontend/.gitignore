@@ -109,3 +109,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+# Keep the safe example file in version control
+!.env.example

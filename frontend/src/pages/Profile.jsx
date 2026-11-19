@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -52,7 +53,7 @@ function Profile() {
   }, []);
 
   const fetchProfile = async () => {
-    const res = await fetch("http://127.0.0.1:8000/profile", {
+    const res = await fetch(`${API_BASE_URL}/profile`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -64,7 +65,7 @@ function Profile() {
   };
 
   const clearChat = async () => {
-    await fetch("http://127.0.0.1:8000/profile/chat", {
+    await fetch(`${API_BASE_URL}/profile/chat`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -78,7 +79,7 @@ function Profile() {
   };
 
   const clearJournal = async () => {
-    await fetch("http://127.0.0.1:8000/profile/journal", {
+    await fetch(`${API_BASE_URL}/profile/journal`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -91,7 +92,7 @@ function Profile() {
   const fetchTrustedContact = async () => {
   try {
     const res = await fetch(
-      "http://127.0.0.1:8000/trusted-contact",
+      `${API_BASE_URL}/trusted-contact`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -121,7 +122,7 @@ function Profile() {
 const saveTrustedContact = async () => {
   try {
     await fetch(
-      "http://127.0.0.1:8000/trusted-contact",
+      `${API_BASE_URL}/trusted-contact`,
       {
         method: "POST",
 
@@ -143,7 +144,7 @@ const saveTrustedContact = async () => {
 const deleteTrustedContact = async () => {
   try {
     await fetch(
-      "http://127.0.0.1:8000/trusted-contact",
+      `${API_BASE_URL}/trusted-contact`,
       {
         method: "DELETE",
 

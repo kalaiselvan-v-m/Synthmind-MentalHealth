@@ -35,19 +35,20 @@ function MoodPopup() {
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getMoodDateKey = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.user_id || "current";
+    return `lastMoodDate:${userId}`;
+  };
+
   useEffect(() => {
     const today = new Date().toDateString();
-    const lastMoodDate = localStorage.getItem("lastMoodDate");
+    const lastMoodDate = localStorage.getItem(getMoodDateKey());
 
-   //if (lastMoodDate !== today) {
-    setShow(true);
-   //}   
+    if (lastMoodDate !== today) {
+      setShow(true);
+    }
   }, []);
-
-  const getUserId = () => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    return user.user_id || user.id || 1;
-  };
 
   const saveMood = async () => {
     if (!selected || loading) return;
@@ -56,12 +57,11 @@ function MoodPopup() {
 
     try {
       await API.post("/mood/checkin", {
-        user_id: getUserId(),
         mood: selected,
         note: "",
       });
 
-      localStorage.setItem("lastMoodDate", new Date().toDateString());
+      localStorage.setItem(getMoodDateKey(), new Date().toDateString());
 
       setShow(false);
     } catch (err) {
@@ -72,7 +72,7 @@ function MoodPopup() {
   };
 
   const skipToday = () => {
-    localStorage.setItem("lastMoodDate", new Date().toDateString());
+    localStorage.setItem(getMoodDateKey(), new Date().toDateString());
     setShow(false);
   };
 

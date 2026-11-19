@@ -1,77 +1,80 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from collections import defaultdict
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from backend.config.database import get_db
+from backend.dependencies.authDependency import getCurrentUser
 from backend.models.mood import Mood
+from backend.models.user import User
 from backend.schemas.moodSchema import MoodCreate
 
 router = APIRouter(prefix="/mood", tags=["Mood"])
 
 
-# ✅ 1. Check-in mood
 @router.post("/checkin")
-def checkin_mood(data: MoodCreate, db: Session = Depends(get_db)):
+def checkin_mood(
+    data: MoodCreate,
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
     new_mood = Mood(
-        user_id=data.user_id,
+        user_id=currentUser.id,
         mood=data.mood,
-        note=data.note
+        note=data.note,
     )
-
     db.add(new_mood)
     db.commit()
     db.refresh(new_mood)
+    return {"message": "Mood recorded successfully", "id": new_mood.id}
 
-    return {"message": "Mood recorded successfully"}
 
-
-# ✅ 2. Get mood history
-@router.get("/history/{user_id}")
-def get_mood_history(user_id: int, db: Session = Depends(get_db)):
-    moods = (
+@router.get("/history")
+def get_mood_history(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
+    return (
         db.query(Mood)
-        .filter(Mood.user_id == user_id)
+        .filter(Mood.user_id == currentUser.id)
         .order_by(Mood.created_at.desc())
         .all()
     )
 
-    return moods
 
-
-# ✅ 3. Mood summary (basic analytics)
-@router.get("/summary/{user_id}")
-def get_mood_summary(user_id: int, db: Session = Depends(get_db)):
-    moods = db.query(Mood).filter(Mood.user_id == user_id).all()
-
+@router.get("/summary")
+def get_mood_summary(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
+    moods = db.query(Mood).filter(Mood.user_id == currentUser.id).all()
     if not moods:
-        raise HTTPException(status_code=404, detail="No mood data found")
+        return {
+            "total_entries": 0,
+            "mood_distribution": {"Happy": 0, "Normal": 0, "Low": 0, "Overwhelmed": 0},
+            "dominant_mood": "None",
+        }
 
-    mood_count = {
-        "Happy": 0,
-        "Normal": 0,
-        "Low": 0,
-        "Overwhelmed": 0
-    }
-
-    for m in moods:
-        if m.mood in mood_count:
-            mood_count[m.mood] += 1
-
-    total = len(moods)
+    mood_count = {"Happy": 0, "Normal": 0, "Low": 0, "Overwhelmed": 0}
+    for mood in moods:
+        if mood.mood in mood_count:
+            mood_count[mood.mood] += 1
 
     return {
-        "total_entries": total,
+        "total_entries": len(moods),
         "mood_distribution": mood_count,
-        "dominant_mood": max(mood_count, key=mood_count.get)
+        "dominant_mood": max(mood_count, key=mood_count.get),
     }
 
 
-# ✅ 4. Mood calendar + insights (NEW)
-@router.get("/calendar/{user_id}")
-def get_mood_calendar(user_id: int, db: Session = Depends(get_db)):
+@router.get("/calendar")
+def get_mood_calendar(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
     moods = (
         db.query(Mood)
-        .filter(Mood.user_id == user_id)
+        .filter(Mood.user_id == currentUser.id)
         .order_by(Mood.created_at.asc())
         .all()
     )
@@ -82,50 +85,27 @@ def get_mood_calendar(user_id: int, db: Session = Depends(get_db)):
             "dominantMood": "None",
             "positiveDays": 0,
             "negativeDays": 0,
-            "insight": "No data yet. Start tracking your mood daily."
+            "insight": "No data yet. Start tracking your mood daily.",
         }
 
     daily_map = defaultdict(list)
+    for item in moods:
+        daily_map[item.created_at.date().isoformat()].append(item.mood)
 
-    for m in moods:
-        date_str = m.created_at.date().isoformat()
-        daily_map[date_str].append(m.mood)
-
+    mood_count = {"Happy": 0, "Normal": 0, "Low": 0, "Overwhelmed": 0}
+    emoji_map = {"Happy": "😊", "Normal": "😐", "Low": "😔", "Overwhelmed": "😵"}
     days = []
 
-    mood_count = {
-        "Happy": 0,
-        "Normal": 0,
-        "Low": 0,
-        "Overwhelmed": 0
-    }
-
-    emoji_map = {
-        "Happy": "😊",
-        "Normal": "😐",
-        "Low": "😔",
-        "Overwhelmed": "😵"
-    }
-
     for date, mood_list in daily_map.items():
-        # take most frequent mood of the day
         mood = max(set(mood_list), key=mood_list.count)
-
         if mood in mood_count:
             mood_count[mood] += 1
-
-        days.append({
-            "date": date,
-            "mood": mood,
-            "emoji": emoji_map.get(mood, "😐")
-        })
+        days.append({"date": date, "mood": mood, "emoji": emoji_map.get(mood, "😐")})
 
     dominant = max(mood_count, key=mood_count.get)
-
     positive = mood_count["Happy"]
     negative = mood_count["Low"] + mood_count["Overwhelmed"]
 
-    # simple insight logic
     if negative > positive:
         insight = "You’ve had more low or heavy days recently. Consider taking small breaks."
     elif positive > negative:
@@ -138,5 +118,5 @@ def get_mood_calendar(user_id: int, db: Session = Depends(get_db)):
         "dominantMood": dominant,
         "positiveDays": positive,
         "negativeDays": negative,
-        "insight": insight
+        "insight": insight,
     }

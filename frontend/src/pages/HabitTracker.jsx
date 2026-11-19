@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -39,7 +40,7 @@ function HabitTracker() {
 
   const fetchProgress = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/habit-tracking", {
+      const res = await fetch(`${API_BASE_URL}/habit-tracking`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -68,7 +69,7 @@ function HabitTracker() {
 
   const markDone = async (habit) => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/habit-tracking/complete", {
+      const res = await fetch(`${API_BASE_URL}/habit-tracking/complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

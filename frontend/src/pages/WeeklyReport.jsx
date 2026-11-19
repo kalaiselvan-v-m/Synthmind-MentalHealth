@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -43,7 +44,7 @@ function WeeklyReport() {
 
   const fetchReport = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/weekly-report", {
+      const res = await fetch(`${API_BASE_URL}/weekly-report`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

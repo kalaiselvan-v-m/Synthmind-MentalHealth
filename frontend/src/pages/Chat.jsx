@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useState, useRef, useEffect } from "react";
 import chatBg from "../assets/images/chat-bg.jpg";
 
@@ -114,7 +115,7 @@ function Chat() {
         return;
       }
 
-      const res = await fetch("http://127.0.0.1:8000/chat/history", {
+      const res = await fetch(`${API_BASE_URL}/chat/history`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -291,7 +292,7 @@ const sendMessage = async () => {
 
   try {
     const response = await fetch(
-      "http://127.0.0.1:8000/chat/stream",
+      `${API_BASE_URL}/chat/stream`,
       {
         method: "POST",
         headers: {
@@ -347,7 +348,7 @@ const sendMessage = async () => {
   const clearLocalChat = async () => {
     try {
       if (token) {
-        await fetch("http://127.0.0.1:8000/chat/history", {
+        await fetch(`${API_BASE_URL}/chat/history`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -469,7 +470,7 @@ const sendMessage = async () => {
         onClick={async () => {
           try {
             const res = await fetch(
-              "http://127.0.0.1:8000/trusted-contact/notify-preview",
+              `${API_BASE_URL}/trusted-contact/notify-preview`,
               {
                 method: "POST",
                 headers: {
@@ -487,7 +488,7 @@ const sendMessage = async () => {
           }
         }}
       >
-        Notify trusted contact
+        Preview trusted contact message
       </button>
 
       <button
@@ -547,7 +548,7 @@ const sendMessage = async () => {
 
           try {
             await fetch(
-              "http://127.0.0.1:8000/crisis-support/grounding-complete",
+              `${API_BASE_URL}/crisis-support/grounding-complete`,
               {
                 method: "POST",
                 headers: {

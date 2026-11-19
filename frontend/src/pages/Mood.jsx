@@ -30,7 +30,7 @@ function Mood() {
 
   const fetchMoodData = async () => {
     try {
-      const res = await API.get("/mood/calendar/1");
+      const res = await API.get("/mood/calendar");
       setData(res.data);
     } catch (err) {
       console.error(err);

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import skyVideo from "../assets/videos/sky.mp4";
+import API from "../api/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -14,15 +15,13 @@ function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const checkOnboardingStatus = async (token) => {
-    const res = await fetch("http://127.0.0.1:8000/onboarding/status", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) return false;
-
-    const status = await res.json();
-    return status.completed;
+  const checkOnboardingStatus = async () => {
+    try {
+      const res = await API.get("/onboarding/status");
+      return Boolean(res.data?.completed);
+    } catch {
+      return false;
+    }
   };
 
   const handleLogin = async (e) => {
@@ -31,31 +30,17 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.detail || "Login failed");
-        setLoading(false);
-        return;
-      }
-
+      const res = await API.post("/auth/login", form);
+      const data = res.data;
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("user", JSON.stringify(data));
-
-      const completed = await checkOnboardingStatus(data.access_token);
+      const completed = await checkOnboardingStatus();
       navigate(completed ? "/chat" : "/onboarding");
     } catch (err) {
-      console.error(err);
-      setError("Backend connection failed");
+      setError(err.response?.data?.detail || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "./api/api";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import "./App.css";
@@ -61,7 +62,7 @@ function AppLayout() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://127.0.0.1:8000/reminder", {
+        const res = await fetch(`${API_BASE_URL}/reminder`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -1,53 +1,61 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.config.database import get_db
+from backend.dependencies.authDependency import getCurrentUser
+from backend.models.user import User
 from backend.models.userMemory import UserMemory
 
 router = APIRouter(prefix="/memory", tags=["Memory"])
 
 
-# ✅ Get all memories for a user
-@router.get("/{user_id}")
-def get_memories(user_id: int, db: Session = Depends(get_db)):
+@router.get("")
+def get_memories(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
     memories = (
         db.query(UserMemory)
-        .filter(UserMemory.user_id == user_id)
+        .filter(UserMemory.user_id == currentUser.id)
         .order_by(UserMemory.importance.desc())
         .all()
     )
-
     return [
         {
-            "id": m.id,
-            "type": m.memory_type,
-            "key": m.memory_key,
-            "value": m.memory_value,
-            "importance": m.importance,
-            "created_at": m.created_at
+            "id": item.id,
+            "type": item.memory_type,
+            "key": item.memory_key,
+            "value": item.memory_value,
+            "importance": item.importance,
+            "created_at": item.created_at,
         }
-        for m in memories
+        for item in memories
     ]
 
 
-# ✅ Delete a single memory
 @router.delete("/{memory_id}")
-def delete_memory(memory_id: int, db: Session = Depends(get_db)):
-    memory = db.query(UserMemory).filter(UserMemory.id == memory_id).first()
-
+def delete_memory(
+    memory_id: int,
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
+    memory = (
+        db.query(UserMemory)
+        .filter(UserMemory.id == memory_id, UserMemory.user_id == currentUser.id)
+        .first()
+    )
     if not memory:
-        return {"message": "Memory not found"}
-
+        raise HTTPException(status_code=404, detail="Memory not found")
     db.delete(memory)
     db.commit()
-
     return {"message": "Memory deleted"}
 
 
-# ✅ Clear all memories for a user
-@router.delete("/clear/{user_id}")
-def clear_memories(user_id: int, db: Session = Depends(get_db)):
-    db.query(UserMemory).filter(UserMemory.user_id == user_id).delete()
+@router.delete("")
+def clear_memories(
+    db: Session = Depends(get_db),
+    currentUser: User = Depends(getCurrentUser),
+):
+    db.query(UserMemory).filter(UserMemory.user_id == currentUser.id).delete(synchronize_session=False)
     db.commit()
-
     return {"message": "All memories cleared"}

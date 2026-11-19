@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -38,7 +39,7 @@ function Journal() {
 
   const fetchEntries = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/journal", {
+      const res = await fetch(`${API_BASE_URL}/journal`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -63,7 +64,7 @@ function Journal() {
     setLoading(true);
 
     try {
-      await fetch("http://127.0.0.1:8000/journal", {
+      await fetch(`${API_BASE_URL}/journal`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

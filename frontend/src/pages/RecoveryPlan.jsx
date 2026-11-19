@@ -41,7 +41,7 @@ function RecoveryPlan() {
 
   const fetchPlan = async () => {
     try {
-      const res = await API.get("/recovery-plan/1");
+      const res = await API.get("/recovery-plan");
       setData(res.data);
       const recoveryRes = await API.get(
       "/recovery-intelligence"

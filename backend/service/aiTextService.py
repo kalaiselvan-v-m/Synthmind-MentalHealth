@@ -1,15 +1,13 @@
-from transformers import pipeline
+"""Lazy-loaded text emotion model with a safe neutral fallback.
+
+The API can start without the optional Transformers stack. The model is loaded
+on first use rather than during FastAPI import/startup.
+"""
 
 MODEL_NAME = "wncelrcn/mindmap-deBERTa-goemotions-multilabel"
+emotionPipeline = None
+modelLoadAttempted = False
 
-# 🔥 Load model ONCE (important for performance)
-emotionPipeline = pipeline(
-    "text-classification",
-    model=MODEL_NAME,
-    top_k=None
-)
-
-# 🔥 Label → Emotion mapping
 label_map = {
     "LABEL_0": "admiration",
     "LABEL_1": "amusement",
@@ -38,47 +36,52 @@ label_map = {
     "LABEL_24": "remorse",
     "LABEL_25": "sadness",
     "LABEL_26": "surprise",
-    "LABEL_27": "neutral"
+    "LABEL_27": "neutral",
 }
 
 
-def analyzeTextEmotion(text: str):
+def loadEmotionPipeline():
+    global emotionPipeline, modelLoadAttempted
+    if modelLoadAttempted:
+        return emotionPipeline
+    modelLoadAttempted = True
     try:
-        results = emotionPipeline(text)[0]
-
-        # Sort by confidence
-        sortedResults = sorted(
-            results,
-            key=lambda item: item["score"],
-            reverse=True
+        from transformers import pipeline
+        emotionPipeline = pipeline(
+            "text-classification",
+            model=MODEL_NAME,
+            top_k=None,
         )
+    except Exception as error:
+        print("OPTIONAL EMOTION MODEL UNAVAILABLE:", str(error))
+        emotionPipeline = None
+    return emotionPipeline
 
-        topEmotion = sortedResults[0]
 
-        # Convert LABEL → actual emotion
-        emotion_label = topEmotion["label"]
-        emotion_name = label_map.get(emotion_label, "unknown")
-
-        # Convert top 5 emotions
-        top_emotions = []
-        for item in sortedResults[:5]:
-            label = item["label"]
-            top_emotions.append({
-                "emotion": label_map.get(label, "unknown"),
-                "score": round(item["score"], 4)
-            })
-
-        return {
-            "topEmotion": emotion_name,
-            "confidence": round(topEmotion["score"], 4),
-            "allEmotions": top_emotions
-        }
-
-    except Exception as e:
-        print("EMOTION MODEL ERROR:", str(e))
-
+def analyzeTextEmotion(text: str):
+    model = loadEmotionPipeline()
+    if model is None:
         return {
             "topEmotion": "neutral",
             "confidence": 0.0,
-            "allEmotions": []
+            "allEmotions": [],
         }
+
+    try:
+        results = model(text)[0]
+        sortedResults = sorted(results, key=lambda item: item["score"], reverse=True)
+        topEmotion = sortedResults[0]
+        return {
+            "topEmotion": label_map.get(topEmotion["label"], "unknown"),
+            "confidence": round(float(topEmotion["score"]), 4),
+            "allEmotions": [
+                {
+                    "emotion": label_map.get(item["label"], "unknown"),
+                    "score": round(float(item["score"]), 4),
+                }
+                for item in sortedResults[:5]
+            ],
+        }
+    except Exception as error:
+        print("EMOTION MODEL ERROR:", str(error))
+        return {"topEmotion": "neutral", "confidence": 0.0, "allEmotions": []}

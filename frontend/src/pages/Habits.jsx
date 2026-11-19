@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api/api";
 import { useEffect, useState } from "react";
 
 function Habits() {
@@ -11,7 +12,7 @@ function Habits() {
 
   const fetchHabits = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/habits", {
+      const res = await fetch(`${API_BASE_URL}/habits`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
